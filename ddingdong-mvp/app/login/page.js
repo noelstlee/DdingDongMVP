@@ -15,18 +15,22 @@ export default function LoginPage() {
             
             {/* Customer Button */}
             <button 
-                className="w-64 bg-[#FFC700] text-white px-6 py-3 rounded-lg shadow-lg transition-transform transform active:translate-y-1 active:shadow-md mb-4"
-                onClick={() => router.push("/customer")}
+                className="w-64 px-6 py-3 rounded-lg bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-white 
+                           shadow-[0_4px_0_#b38600] transition-all transform active:translate-y-1 
+                           active:shadow-inner mb-4"
+                onClick={() => router.push("/auth/login?role=customer")}
             >
                 Customer
             </button>
             
             {/* Restaurant Personnel Button */}
             <button 
-                className="w-64 bg-gray-300 text-black px-6 py-3 rounded-lg shadow-lg transition-transform transform active:translate-y-1 active:shadow-md"
-                onClick={() => router.push("/server")}
+                className="w-64 px-6 py-3 rounded-lg bg-gradient-to-b from-gray-400 to-gray-300 text-black 
+                           shadow-[0_4px_0_#8c8c8c] transition-all transform active:translate-y-1 
+                           active:shadow-inner"
+                onClick={() => router.push("/auth/login?role=manager")}
             >
-                Restaurant Personnel
+                Manager
             </button>
         </div>
     );

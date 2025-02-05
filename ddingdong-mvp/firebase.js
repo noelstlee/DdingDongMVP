@@ -16,7 +16,8 @@ const firebaseConfig = {
   storageBucket: "ddingdong-mvp.appspot.com",
   messagingSenderId: "365640667813",
   appId: "1:365640667813:web:53a69e58ee01570faa334c",
-  measurementId: "G-Z6FP8TB669"
+  measurementId: "G-Z6FP8TB669",
+  clientId: "365640667813-0fhuq2a6heujpjug58imum144mkbff80.apps.googleusercontent.com"
 };
 
 // Initialize Firebase

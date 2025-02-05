@@ -1,0 +1,38 @@
+[debug] [2025-02-05T06:01:25.727Z] ----------------------------------------------------------------------
+[debug] [2025-02-05T06:01:25.728Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy
+[debug] [2025-02-05T06:01:25.729Z] CLI Version:   13.30.0
+[debug] [2025-02-05T06:01:25.729Z] Platform:      darwin
+[debug] [2025-02-05T06:01:25.729Z] Node Version:  v20.15.0
+[debug] [2025-02-05T06:01:25.729Z] Time:          Wed Feb 05 2025 01:01:25 GMT-0500 (Eastern Standard Time)
+[debug] [2025-02-05T06:01:25.729Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-05T06:01:25.824Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-05T06:01:25.824Z] > authorizing via signed-in user (noelstlee@gmail.com)
+[debug] [2025-02-05T06:01:25.824Z] [iam] checking project ddingdong-mvp for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-02-05T06:01:25.825Z] Checked if tokens are valid: false, expires at: 1738732909809
+[debug] [2025-02-05T06:01:25.825Z] Checked if tokens are valid: false, expires at: 1738732909809
+[debug] [2025-02-05T06:01:25.825Z] > refreshing access token with scopes: []
+[debug] [2025-02-05T06:01:25.826Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-02-05T06:01:25.826Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-05T06:01:25.926Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-02-05T06:01:25.926Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-02-05T06:01:25.939Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions [none]
+[debug] [2025-02-05T06:01:25.939Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-05T06:01:25.939Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-02-05T06:01:26.275Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions 200
+[debug] [2025-02-05T06:01:26.275Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-02-05T06:01:26.276Z] Checked if tokens are valid: true, expires at: 1738738884926
+[debug] [2025-02-05T06:01:26.276Z] Checked if tokens are valid: true, expires at: 1738738884926
+[debug] [2025-02-05T06:01:26.276Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp [none]
+[debug] [2025-02-05T06:01:26.529Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp 200
+[debug] [2025-02-05T06:01:26.529Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp {"projectId":"ddingdong-mvp","projectNumber":"365640667813","displayName":"ddingdong-mvp","name":"projects/ddingdong-mvp","resources":{"hostingSite":"ddingdong-mvp"},"state":"ACTIVE","etag":"1_be26a1ef-caed-442b-a892-e97743a29761"}
+[info] 
+[info] === Deploying to 'ddingdong-mvp'...
+[info] 
+[info] i  deploying firestore, hosting 
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2025-02-05T06:01:26.532Z] Checked if tokens are valid: true, expires at: 1738738884926
+[debug] [2025-02-05T06:01:26.532Z] Checked if tokens are valid: true, expires at: 1738738884926
+[debug] [2025-02-05T06:01:26.532Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp:test [none]
+[debug] [2025-02-05T06:01:26.532Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp:test [omitted]

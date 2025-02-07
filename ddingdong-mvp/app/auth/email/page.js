@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { sendSignInLinkToEmail } from "firebase/auth";
-import { auth } from "@/firebase"; 
+import { db } from "@/firebase"; // Import Firestore database
+import { doc, getDoc } from "firebase/firestore";
 import { Rum_Raisin } from "next/font/google";
 
 const rumRaisin = Rum_Raisin({ subsets: ["latin"], weight: "400" });
@@ -12,12 +12,23 @@ export default function EmailLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
 
+    const checkUserExists = async (email) => {
+        const userDoc = await getDoc(doc(db, "users", email)); // Check if email exists in Firestore
+        return userDoc.exists();
+    };
+
     const handleEmailSubmit = async () => {
         if (!email) return;
 
         try {
+            const userExists = await checkUserExists(email);
+            if (userExists) {
+                router.push("/home"); // Redirect to main page if user exists
+                return;
+            }
+
             window.localStorage.setItem("emailForSignIn", email);
-            router.push(`/auth/email/password?email=${encodeURIComponent(email)}`); // Redirect to password page
+            router.push(`/auth/email/password?email=${encodeURIComponent(email)}`);
         } catch (error) {
             console.error("Error proceeding to password page:", error);
         }
@@ -25,7 +36,6 @@ export default function EmailLoginPage() {
 
     return (
         <div className={`flex flex-col items-center justify-center min-h-screen p-5 bg-gray-900 ${rumRaisin.className}`}>
-            {/* Back Button */}
             <button 
                 className="absolute top-6 left-6 text-[#FFC700] font-bold transition-transform active:scale-95"
                 onClick={() => router.back()}
@@ -35,7 +45,6 @@ export default function EmailLoginPage() {
 
             <h1 className="text-2xl font-bold mb-6 text-white">Get going with email</h1>
 
-            {/* Email Input Field */}
             <input 
                 type="email" 
                 placeholder="Email Address" 
@@ -45,7 +54,6 @@ export default function EmailLoginPage() {
                            focus:outline-none focus:ring-2 focus:ring-[#FFD700] mb-4"
             />
 
-            {/* Continue Button */}
             <button 
                 className="w-64 px-6 py-3 rounded-lg bg-gradient-to-b from-gray-400 to-gray-300 text-black 
                            shadow-[0_4px_0_#8c8c8c] transition-all transform active:bg-gradient-to-b 

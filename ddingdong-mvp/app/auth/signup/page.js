@@ -1,37 +1,55 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { Poppins } from "next/font/google";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"; // Removed OAuthProvider
+import { auth } from "@/firebase";
+
+
+// Import Poppins font
+const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role"); // Determine role
+
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
   const handleSignupWithEmail = async () => {
     if (!email) return;
 
     try {
-      // Store the email locally to use later in the signupInfo page
       window.localStorage.setItem("emailForSignIn", email);
-      router.push("/auth/signupInfo"); // Redirect to signupInfo page
+      window.localStorage.setItem("signupRole", role);
+      router.push(`/auth/signupInfo?role=${role}`);
     } catch (err) {
       console.error("Error during email signup process:", err);
     }
   };
 
   const handleGoogleSignup = async () => {
-    // Add logic for signing up with Google here if required
-    console.log("Sign up with Google clicked");
-  };
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-  const handleAppleSignup = async () => {
-    // Add logic for signing up with Apple here if required
-    console.log("Sign up with Apple clicked");
+      window.localStorage.setItem("userEmail", user.email);
+      window.localStorage.setItem("userUID", user.uid);
+      window.localStorage.setItem("signupRole", role);
+
+      router.push(role === "manager" ? "/auth/extraInfoMan" : "/auth/extraInfo");
+    } catch (err) {
+      console.error("Google Signup Error:", err);
+      setError("Failed to sign up with Google. Please try again.");
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-blue-950 text-yellow-400 p-5">
-      <h1 className="text-2xl font-bold mb-6">Sign Up</h1>
+    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
+      <h1 className="text-4xl font-bold mb-6">{role === "manager" ? "Manager Signup" : "Customer Signup"}</h1>
 
       {/* Email Input */}
       <input
@@ -39,30 +57,28 @@ export default function SignupPage() {
         placeholder="Email Address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-64 px-4 py-3 border border-yellow bg-white text-black rounded mb-4 focus:outline-none"
+        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
       />
+
+      {/* Sign Up with Email Button */}
       <button
-        className="w-64 px-6 py-3 bg-yellow text-navy font-bold rounded mb-4 hover:bg-yellow-600 transition"
+        className="w-64 px-6 py-3 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-white text-xl font-medium rounded mb-4 
+                   shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
         onClick={handleSignupWithEmail}
       >
-        Sign up with Email
+        SIGN UP WITH EMAIL
       </button>
 
       {/* Google Signup */}
       <button
-        className="w-64 px-6 py-3 bg-gray-200 text-black rounded mb-4 hover:bg-gray-300 transition"
+        className="w-64 px-6 py-3 bg-gray-700 text-white text-lg font-medium rounded mb-4 hover:bg-gray-600 transition"
         onClick={handleGoogleSignup}
       >
-        Sign up with Google
+        SIGN UP WITH GOOGLE
       </button>
 
-      {/* Apple Signup */}
-      <button
-        className="w-64 px-6 py-3 bg-gray-200 text-black rounded hover:bg-gray-300 transition"
-        onClick={handleAppleSignup}
-      >
-        Sign up with Apple
-      </button>
+      {/* Error Message */}
+      {error && <p className="text-red-500 mt-4">{error}</p>}
     </div>
   );
 }

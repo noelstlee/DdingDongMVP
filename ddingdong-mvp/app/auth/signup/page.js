@@ -35,10 +35,10 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
+      // ✅ Ensure the correct role is stored
+      window.localStorage.setItem("signupRole", role);
       window.localStorage.setItem("userEmail", user.email);
       window.localStorage.setItem("userUID", user.uid);
-      window.localStorage.setItem("signupRole", role);
 
       router.push(role === "manager" ? "/auth/extraInfoMan" : "/auth/extraInfo");
     } catch (err) {

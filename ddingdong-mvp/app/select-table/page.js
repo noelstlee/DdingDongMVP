@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Poppins } from "next/font/google";
 import { auth, db } from "@/firebase"; // Import Firebase auth and Firestore
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, getDocs } from "firebase/firestore";
 
 // Import Poppins font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
@@ -12,25 +12,46 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 export default function SelectTablePage() {
   const router = useRouter();
   const [selectedTable, setSelectedTable] = useState(null);
+  const [tables, setTables] = useState([]); // State to hold dynamically fetched table list
 
-  const tables = Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`); // Generate Table 1-10
+  useEffect(() => {
+    const fetchTables = async () => {
+      const restaurantId = localStorage.getItem("selectedRestaurantId");
+      if (!restaurantId) {
+        alert("Error: No restaurant selected.");
+        return;
+      }
+
+      try {
+        const tableCollectionRef = collection(db, `tables/${restaurantId}/table_items`);
+        const querySnapshot = await getDocs(tableCollectionRef);
+        const fetchedTables = querySnapshot.docs.map((doc) => doc.id); // Extract table IDs
+        setTables(fetchedTables); // Update state with table IDs
+      } catch (error) {
+        console.error("Error fetching tables:", error);
+        alert("Failed to fetch table data. Please try again.");
+      }
+    };
+
+    fetchTables();
+  }, []);
 
   const handleConfirm = async () => {
     if (!selectedTable) return;
-  
+
     const user = auth.currentUser;
     if (!user) {
       alert("Please log in to continue.");
       return;
     }
-  
+
     const restaurantId = localStorage.getItem("selectedRestaurantId");
-  
+
     if (!restaurantId) {
       alert("Error: No restaurant selected.");
       return;
     }
-  
+
     try {
       // Save customer details in Firestore (ensure no overwrites)
       await setDoc(
@@ -43,15 +64,13 @@ export default function SelectTablePage() {
         },
         { merge: true } // Use merge to avoid overwriting other fields
       );
-  
+
       router.push("/bell");
     } catch (error) {
       console.error("Error saving customer details:", error);
       alert("Failed to save table selection. Please try again.");
     }
   };
-  
-  
 
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>

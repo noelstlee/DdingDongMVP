@@ -34,6 +34,17 @@ export default function ManagerSettingsPage() {
           Manage Request Menu 📜
         </button>
       </div>
+
+    {/* Table Customization */}
+    <div className="mb-8">
+      <h2 className="text-2xl font-bold mb-4">Customize Tables</h2>
+      <button 
+        className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg"
+        onClick={() => router.push("/managerMain/settings/tables")}
+      >
+        Manage Tables 🪑
+      </button>
     </div>
-  );
+  </div>
+);
 }

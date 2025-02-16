@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db, auth } from "@/firebase";
-import { collection, onSnapshot, query, where, addDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { Poppins } from "next/font/google";
 
 // Import Font
@@ -41,9 +41,9 @@ export default function ManageMenuPage() {
 
     console.log(`Fetching menu for restaurant: ${restaurantId}`);
 
-    const q = query(collection(db, "menu"), where("restaurantId", "==", restaurantId));
+    const menuRef = collection(db, "menu", restaurantId, "items"); // ✅ Fetch from structured DB
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(menuRef, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       console.log("Menu items received:", items);
       setMenuItems(items);
@@ -53,17 +53,26 @@ export default function ManageMenuPage() {
   }, [restaurantId]);
 
   const handleAddItem = async () => {
-    if (!newItem.name || !newItem.price) {
-      alert("Please enter a name and price.");
+    if (!newItem.name.trim() || !newItem.price.trim()) {
+      alert("⚠️ Please enter both Name and Price.");
+      return;
+    }
+    if (isNaN(Number(newItem.price)) || Number(newItem.price) <= 0) {
+      alert("⚠️ Price must be a valid number greater than 0.");
       return;
     }
     if (!restaurantId) {
-      alert("Error: Restaurant ID not found. Please try again.");
+      alert("⚠️ Error: Restaurant ID not found. Please try again.");
       return;
     }
 
     try {
-      await addDoc(collection(db, "menu"), { ...newItem, restaurantId });
+      await addDoc(collection(db, "menu", restaurantId, "items"), { 
+        name: newItem.name.trim(), 
+        description: newItem.description.trim(), 
+        price: Number(newItem.price).toFixed(2), 
+        image: newItem.image.trim() 
+      });
       setNewItem({ name: "", description: "", price: "", image: "" });
       alert("✅ Menu item added successfully!");
     } catch (error) {
@@ -73,7 +82,7 @@ export default function ManageMenuPage() {
 
   const handleDeleteItem = async (id) => {
     try {
-      await deleteDoc(doc(db, "menu", id));
+      await deleteDoc(doc(db, "menu", restaurantId, "items", id));
       setMenuItems((prev) => prev.filter((item) => item.id !== id));
     } catch (error) {
       console.error("❌ Error deleting menu item:", error);
@@ -94,7 +103,7 @@ export default function ManageMenuPage() {
           onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} 
         />
         <input 
-          type="text" placeholder="Description" 
+          type="text" placeholder="Description (optional)" 
           className="w-full p-2 mb-2 bg-gray-700 text-white" 
           value={newItem.description} 
           onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} 
@@ -104,6 +113,12 @@ export default function ManageMenuPage() {
           className="w-full p-2 mb-2 bg-gray-700 text-white" 
           value={newItem.price} 
           onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} 
+        />
+        <input 
+          type="text" placeholder="Image URL (optional)" 
+          className="w-full p-2 mb-2 bg-gray-700 text-white" 
+          value={newItem.image} 
+          onChange={(e) => setNewItem({ ...newItem, image: e.target.value })} 
         />
         <button 
           className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg"
@@ -115,20 +130,24 @@ export default function ManageMenuPage() {
 
       {/* Menu List */}
       <h2 className="text-2xl font-bold mb-4">Existing Menu</h2>
-      {menuItems.map(item => (
-        <div key={item.id} className="flex justify-between items-center bg-gray-800 p-4 mb-2 rounded-lg">
-          <div>
-            <p className="text-lg font-semibold">{item.name} - ${item.price}</p>
-            <p className="text-sm text-gray-400">{item.description}</p>
+      {menuItems.length === 0 ? (
+        <p className="text-gray-400">No menu items available.</p>
+      ) : (
+        menuItems.map(item => (
+          <div key={item.id} className="flex justify-between items-center bg-gray-800 p-4 mb-2 rounded-lg">
+            <div>
+              <p className="text-lg font-semibold">{item.name} - ${item.price}</p>
+              <p className="text-sm text-gray-400">{item.description}</p>
+            </div>
+            <button 
+              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
+              onClick={() => handleDeleteItem(item.id)}
+            >
+              ❌
+            </button>
           </div>
-          <button 
-            className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
-            onClick={() => handleDeleteItem(item.id)}
-          >
-            ❌
-          </button>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }

@@ -116,7 +116,7 @@ export default function BellPage() {
       <button
         className="w-72 px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
                     shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner mb-8"
-        onClick={() => restaurantId && router.push(`/menu/${restaurantId}`)} // ✅ Route dynamically
+        onClick={() => restaurantId && router.push(`/menu?restaurantId=${restaurantId}`)} // ✅ Use query params instead
       >
         Menu
       </button>

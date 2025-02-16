@@ -6,6 +6,9 @@ import { db } from "@/firebase";
 import { collection, query, where, onSnapshot, doc, updateDoc, getDocs } from "firebase/firestore";
 import { Poppins } from "next/font/google";
 
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase";
+
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
@@ -25,7 +28,7 @@ export default function ManagerMainPage() {
 
         if (!managerEmail) {
           console.error("❌ No manager email found in localStorage.");
-          router.push("/login"); // Redirect to login if no email is found
+          router.push("/auth/man/cus"); // Redirect to login if no email is found
           return;
         }
 
@@ -37,7 +40,7 @@ export default function ManagerMainPage() {
 
         if (managerSnapshot.empty) {
           console.error("❌ Manager email not found in Firestore.");
-          router.push("/login");
+          router.push("/auth/man/cus");
           return;
         }
 
@@ -59,43 +62,46 @@ export default function ManagerMainPage() {
     fetchManagerData();
   }, [router]);
 
-  useEffect(() => {
-    if (!restaurantId) return;
+useEffect(() => {
+  if (!restaurantId) return;
 
-    console.log(`📡 Fetching tables for restaurant: ${restaurantId}`);
+  console.log(`📡 Fetching tables for restaurant: ${restaurantId}`);
 
-    const unsubscribeTables = onSnapshot(
-      query(collection(db, "tables"), where("restaurantId", "==", restaurantId)),
-      (snapshot) => {
-        const tableList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        console.log("✅ Tables fetched:", tableList);
-        setTables(tableList);
-      }
-    );
+  // Fetch the `table_items` subcollection for the specific restaurantId
+  const unsubscribeTables = onSnapshot(
+    collection(db, `tables/${restaurantId}/table_items`), // Correct path to table_items
+    (snapshot) => {
+      const tableList = snapshot.docs.map((doc) => ({
+        id: doc.id, // Document ID (e.g., "Table 1")
+        ...doc.data(), // Include the fields from the document
+      }));
+      console.log("✅ Tables fetched:", tableList);
+      setTables(tableList); // Set the tables state with the fetched data
+    }
+  );
 
-    console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
+  // Fetch requests for the restaurant
+  const unsubscribeRequests = onSnapshot(
+    query(collection(db, "requests"), where("restaurantId", "==", restaurantId)),
+    (snapshot) => {
+      const updatedRequests = {};
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const tableNumber = String(data.table); // Use the table field to group requests
+        if (!updatedRequests[tableNumber]) updatedRequests[tableNumber] = [];
+        updatedRequests[tableNumber].push({ id: doc.id, ...data });
+      });
 
-    const unsubscribeRequests = onSnapshot(
-      query(collection(db, "requests"), where("restaurantId", "==", restaurantId)),
-      (snapshot) => {
-        const updatedRequests = {};
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const tableNumber = String(data.table);
-          if (!updatedRequests[tableNumber]) updatedRequests[tableNumber] = [];
-          updatedRequests[tableNumber].push({ id: doc.id, ...data });
-        });
+      console.log("✅ Requests fetched:", updatedRequests);
+      setTableRequests(updatedRequests);
+    }
+  );
 
-        console.log("✅ Requests fetched:", updatedRequests);
-        setTableRequests(updatedRequests);
-      }
-    );
-
-    return () => {
-      unsubscribeTables();
-      unsubscribeRequests();
-    };
-  }, [restaurantId]);
+  return () => {
+    unsubscribeTables();
+    unsubscribeRequests();
+  };
+}, [restaurantId]);
 
   const handleMarkDone = async (tableNumber, requestId) => {
     try {
@@ -113,6 +119,17 @@ export default function ManagerMainPage() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth); // ✅ Pass the auth instance
+      localStorage.removeItem("managerEmail"); // ✅ Clear manager email from localStorage
+      router.push("/auth/man/cus"); // ✅ Redirect to the login page
+    } catch (err) {
+      console.error("❌ Error signing out:", err);
+    }
+  };
+
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-gray-900 text-yellow-400">Loading...</div>;
   }
@@ -123,7 +140,7 @@ export default function ManagerMainPage() {
         <h1 className="text-3xl text-red-500 font-bold mb-4">Error</h1>
         <p className="text-lg">{error}</p>
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/auth/man/cus")}
           className="mt-6 px-6 py-3 bg-yellow-500 text-black text-lg font-bold rounded-lg shadow-lg"
         >
           Go to Login
@@ -137,12 +154,20 @@ export default function ManagerMainPage() {
       {/* Header */}
       <div className="w-full flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold">Manager Dashboard</h1>
-        <button
-          className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-          onClick={() => router.push("/managerMain/settings")}
-        >
-          ⚙️ Settings
-        </button>
+        <div>
+          <button
+            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition mr-4"
+            onClick={() => router.push("/managerMain/settings")}
+          >
+            ⚙️ Settings
+          </button>
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+            onClick={handleSignOut}
+          >
+            🔴 Sign Out
+          </button>
+        </div>
       </div>
 
       {/* Manager Info */}
@@ -156,7 +181,7 @@ export default function ManagerMainPage() {
       {/* Tables */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         {tables.map((table) => {
-          const tableNumber = String(table.id);
+          const tableNumber = String(table.tableNumber);
           const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
 
           return (
@@ -167,7 +192,7 @@ export default function ManagerMainPage() {
                           text-black shadow-lg`}
               onClick={() => router.push(`/manager/table/${tableNumber}`)}
             >
-              {table.name}
+              Table {tableNumber}
               {unresolvedRequests.length > 0 && (
                 <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
                   {unresolvedRequests.length}

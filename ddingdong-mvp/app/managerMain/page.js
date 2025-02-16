@@ -113,6 +113,20 @@ export default function ManagerMainPage() {
     }
   };
 
+<<<<<<< Updated upstream
+=======
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth); // ✅ Pass the auth instance
+      localStorage.removeItem("managerEmail"); // ✅ Clear manager email from localStorage
+      router.push("/auth/manager"); // ✅ Redirect to the login page
+    } catch (err) {
+      console.error("❌ Error signing out:", err);
+    }
+  };
+
+
+>>>>>>> Stashed changes
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-gray-900 text-yellow-400">Loading...</div>;
   }

@@ -19,12 +19,12 @@ export default function ForgotPasswordPage() {
 
     try {
       await sendPasswordResetEmail(auth, email);
-      setSuccessMessage("Reset email sent successfully! Redirecting to login...");
+      setSuccessMessage("Reset email sent successfully! Redirecting to manager login...");
       setError("");
 
-      // Redirect to login page after a short delay
+      // ✅ Redirect to manager login after a short delay
       setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/auth/manager");
       }, 3000);
     } catch (err) {
       console.error(err);
@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
       // Display relevant error messages
       switch (err.code) {
         case "auth/user-not-found":
-          setError("No account found with this email.");
+          setError("No manager account found with this email.");
           break;
         case "auth/invalid-email":
           setError("Invalid email format. Please try again.");
@@ -47,12 +47,16 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-blue-950 text-yellow-400 p-5">
-      <h1 className="text-2xl font-bold mb-6">Forgot Password</h1>
+      <h1 className="text-2xl font-bold mb-6">Manager Password Reset</h1>
+
+      <p className="mb-4 text-center text-gray-300">
+        Enter your email to reset your manager account password.
+      </p>
 
       {/* Email Input */}
       <input
         type="email"
-        placeholder="Enter your email"
+        placeholder="Enter your manager email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         className="w-64 px-4 py-3 border border-yellow bg-white text-black rounded mb-4 focus:outline-none"
@@ -71,6 +75,16 @@ export default function ForgotPasswordPage() {
       >
         Send Reset Email
       </button>
+
+      {/* Back to Login */}
+      <p className="mt-4 text-sm">
+        <span
+          className="text-yellow-300 cursor-pointer"
+          onClick={() => router.push("/auth/manager")}
+        >
+          Back to Login
+        </span>
+      </p>
     </div>
   );
 }

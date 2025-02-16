@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth"; // ✅ Import auth state listener
 import { Poppins } from "next/font/google";
 
-// Import Poppins font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
 export default function ExtraInfoManPage() {
@@ -17,18 +17,24 @@ export default function ExtraInfoManPage() {
   const [birthday, setBirthday] = useState("");
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true); // ✅ Added loading state
 
   useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      router.push("/auth/signup"); // Redirect if not authenticated
-    } else {
-      setUser(currentUser);
-    }
+    // ✅ Properly listen for authentication state
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (!currentUser) {
+        router.push("/auth/signup"); // Redirect if not logged in
+      } else {
+        setUser(currentUser);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe(); // Cleanup
   }, [router]);
 
   const handleContinue = async () => {
-    if (!firstName || !lastName || !birthday || !restaurantCode) {
+    if (!firstName.trim() || !lastName.trim() || !birthday.trim() || !restaurantCode.trim()) {
       setError("All fields are required.");
       return;
     }
@@ -39,7 +45,8 @@ export default function ExtraInfoManPage() {
         return;
       }
 
-      // Check if restaurant code exists in Firestore
+      setError(""); // Clear previous errors
+
       const restaurantRef = doc(db, "restaurants", restaurantCode);
       const restaurantSnap = await getDoc(restaurantRef);
 
@@ -48,31 +55,46 @@ export default function ExtraInfoManPage() {
         return;
       }
 
-      // Save manager details to Firestore
-      const managerRef = doc(db, "managers", user.uid);
-      await setDoc(managerRef, {
-        email: user.email,
-        firstName,
-        lastName,
-        birthday,
-        restaurantId: restaurantCode, // Ensure it's stored as restaurantId
-      });
+      // ✅ Save manager details properly with merge option
+      await setDoc(
+        doc(db, "managers", user.uid),
+        {
+          email: user.email,
+          firstName,
+          lastName,
+          birthday,
+          restaurantId: restaurantCode,
+        },
+        { merge: true } // ✅ Prevents overwriting existing data
+      );
 
-      // Save manager role in local storage
+      // ✅ Store manager data in local storage
       localStorage.setItem("managerEmail", user.email);
       localStorage.setItem("role", "manager");
 
-      // Redirect to Manager Dashboard
-      router.push("/managerMain");
+      router.push("/managerMain"); // ✅ Directly go to manager dashboard
     } catch (err) {
       console.error("Error saving manager details:", err);
       setError("Failed to save details. Please try again.");
     }
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>;
+  }
+
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-3xl font-bold mb-6">Enter Your Details</h1>
+      <h1 className="text-3xl font-bold mb-6">Manager Extra Information</h1>
+
+      {/* Restaurant Code Input */}
+      <input
+        type="text"
+        placeholder="Restaurant Code"
+        value={restaurantCode}
+        onChange={(e) => setRestaurantCode(e.target.value)}
+        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
+      />
 
       {/* First Name Input */}
       <input
@@ -80,7 +102,7 @@ export default function ExtraInfoManPage() {
         placeholder="First Name"
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
+        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
       />
 
       {/* Last Name Input */}
@@ -89,7 +111,7 @@ export default function ExtraInfoManPage() {
         placeholder="Last Name"
         value={lastName}
         onChange={(e) => setLastName(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
+        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
       />
 
       {/* Birthday Input */}
@@ -97,16 +119,7 @@ export default function ExtraInfoManPage() {
         type="date"
         value={birthday}
         onChange={(e) => setBirthday(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
-      />
-
-      {/* Restaurant Code Input */}
-      <input
-        type="text"
-        placeholder="Restaurant Code"
-        value={restaurantCode}
-        onChange={(e) => setRestaurantCode(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
+        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
       />
 
       {/* Error Message */}
@@ -114,7 +127,7 @@ export default function ExtraInfoManPage() {
 
       {/* Continue Button */}
       <button
-        className="w-72 px-6 py-3 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
+        className="w-64 px-6 py-3 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded 
                    shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
         onClick={handleContinue}
       >

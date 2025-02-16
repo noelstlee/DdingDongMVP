@@ -1,14 +1,13 @@
-[debug] [2025-02-08T20:20:39.493Z] ----------------------------------------------------------------------
-[debug] [2025-02-08T20:20:39.495Z] Command:       /usr/local/bin/node /usr/local/bin/firebase init hosting
-[debug] [2025-02-08T20:20:39.495Z] CLI Version:   13.30.0
-[debug] [2025-02-08T20:20:39.495Z] Platform:      darwin
-[debug] [2025-02-08T20:20:39.496Z] Node Version:  v20.15.0
-[debug] [2025-02-08T20:20:39.496Z] Time:          Sat Feb 08 2025 15:20:39 GMT-0500 (Eastern Standard Time)
-[debug] [2025-02-08T20:20:39.496Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T05:21:13.455Z] ----------------------------------------------------------------------
+[debug] [2025-02-16T05:21:13.457Z] Command:       /opt/homebrew/Cellar/node/23.7.0/bin/node /opt/homebrew/bin/firebase init
+[debug] [2025-02-16T05:21:13.458Z] CLI Version:   13.31.1
+[debug] [2025-02-16T05:21:13.458Z] Platform:      darwin
+[debug] [2025-02-16T05:21:13.458Z] Node Version:  v23.7.0
+[debug] [2025-02-16T05:21:13.458Z] Time:          Sun Feb 16 2025 00:21:13 GMT-0500 (Eastern Standard Time)
+[debug] [2025-02-16T05:21:13.458Z] ----------------------------------------------------------------------
 [debug] 
-[debug] [2025-02-08T20:20:39.497Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
-[debug] [2025-02-08T20:20:39.655Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
-[debug] [2025-02-08T20:20:39.655Z] > authorizing via signed-in user (noelstlee@gmail.com)
+[debug] [2025-02-16T05:21:13.596Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T05:21:13.597Z] > authorizing via signed-in user (noelstlee@gmail.com)
 [info] 
      ######## #### ########  ######## ########     ###     ######  ########
      ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
@@ -18,7 +17,7 @@
 
 You're about to initialize a Firebase project in this directory:
 
-  /Users/istantheman/Documents/DdingDongMVP/ddingdong-mvp
+  /Users/sunho/Desktop/DdingDongMVP/ddingdong-mvp
 
 Before we get started, keep in mind:
 
@@ -31,27 +30,126 @@ Before we get started, keep in mind:
 [info] You can create multiple project aliases by running firebase use --add, 
 [info] but for now we'll just set up a default project.
 [info] 
-[debug] [2025-02-08T20:20:39.657Z] Using project from CLI flag: ddingdong-mvp
-[debug] [2025-02-08T20:20:39.657Z] Checked if tokens are valid: false, expires at: 1738738884926
-[debug] [2025-02-08T20:20:39.657Z] Checked if tokens are valid: false, expires at: 1738738884926
-[debug] [2025-02-08T20:20:39.657Z] > refreshing access token with scopes: []
-[debug] [2025-02-08T20:20:39.657Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
-[debug] [2025-02-08T20:20:39.657Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
-[debug] [2025-02-08T20:20:39.731Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
-[debug] [2025-02-08T20:20:39.731Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
-[debug] [2025-02-08T20:20:39.833Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
-[debug] [2025-02-08T20:20:39.833Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
-[debug] [2025-02-08T20:20:39.849Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp [none]
-[debug] [2025-02-08T20:20:40.077Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp 200
-[debug] [2025-02-08T20:20:40.077Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp {"projectId":"ddingdong-mvp","projectNumber":"365640667813","displayName":"ddingdong-mvp","name":"projects/ddingdong-mvp","resources":{"hostingSite":"ddingdong-mvp"},"state":"ACTIVE","etag":"1_694d7376-08ec-45d2-acb3-315889748c38"}
+[debug] [2025-02-16T05:22:15.645Z] Using project from CLI flag: ddingdong-mvp
+[debug] [2025-02-16T05:22:15.647Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:15.647Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:15.648Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp [none]
+[debug] [2025-02-16T05:22:15.989Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp 200
+[debug] [2025-02-16T05:22:15.990Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp {"projectId":"ddingdong-mvp","projectNumber":"365640667813","displayName":"ddingdong-mvp","name":"projects/ddingdong-mvp","resources":{"hostingSite":"ddingdong-mvp"},"state":"ACTIVE","etag":"1_694d7376-08ec-45d2-acb3-315889748c38"}
 [info] i  Using project ddingdong-mvp (ddingdong-mvp) 
 [info] 
+=== Firestore Setup
+[debug] [2025-02-16T05:22:16.004Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.004Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.004Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/firestore.googleapis.com [none]
+[debug] [2025-02-16T05:22:16.004Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/firestore.googleapis.com x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:16.424Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/firestore.googleapis.com 200
+[debug] [2025-02-16T05:22:16.424Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/firestore.googleapis.com [omitted]
+[debug] [2025-02-16T05:22:16.425Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.425Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.425Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default) [none]
+[debug] [2025-02-16T05:22:16.704Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default) 200
+[debug] [2025-02-16T05:22:16.704Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default) {"name":"projects/ddingdong-mvp/databases/(default)","uid":"f464df0c-9341-4f13-adf4-db96653f8ec9","createTime":"2025-02-05T01:52:14.760625Z","updateTime":"2025-02-05T01:52:14.760625Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2025-02-16T04:22:16.726442Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","etag":"IJvKurq5x4sDMJW34La2q4sD"}
+[debug] [2025-02-16T05:22:16.704Z] database_type: FIRESTORE_NATIVE
+[debug] [2025-02-16T05:22:16.705Z] database_type: FIRESTORE_NATIVE
+[debug] [2025-02-16T05:22:16.705Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T05:22:16.706Z] > authorizing via signed-in user (noelstlee@gmail.com)
+[debug] [2025-02-16T05:22:16.706Z] [iam] checking project ddingdong-mvp for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T05:22:16.706Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.706Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:16.706Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions [none]
+[debug] [2025-02-16T05:22:16.706Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:16.706Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T05:22:16.851Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions 200
+[debug] [2025-02-16T05:22:16.852Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["firebase.projects.get"]}
+[info] 
+[info] Firestore Security Rules allow you to define how and when to allow
+[info] requests. You can keep these rules in your project directory
+[info] and publish them with firebase deploy.
+[info] 
+[debug] [2025-02-16T05:22:40.920Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:40.921Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:40.921Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/releases pageSize=10&pageToken=
+[debug] [2025-02-16T05:22:41.094Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/releases 200
+[debug] [2025-02-16T05:22:41.094Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/releases {"releases":[{"name":"projects/ddingdong-mvp/releases/cloud.firestore","rulesetName":"projects/ddingdong-mvp/rulesets/cbabf618-9437-4b5a-9f59-798da3607c01","createTime":"2025-02-05T01:52:19.291638Z","updateTime":"2025-02-16T03:32:18.821415Z"}]}
+[debug] [2025-02-16T05:22:41.094Z] Found ruleset: projects/ddingdong-mvp/rulesets/cbabf618-9437-4b5a-9f59-798da3607c01
+[debug] [2025-02-16T05:22:41.095Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:41.095Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:41.095Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/rulesets/cbabf618-9437-4b5a-9f59-798da3607c01 [none]
+[debug] [2025-02-16T05:22:41.238Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/rulesets/cbabf618-9437-4b5a-9f59-798da3607c01 200
+[debug] [2025-02-16T05:22:41.238Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/ddingdong-mvp/rulesets/cbabf618-9437-4b5a-9f59-798da3607c01 [omitted]
+[info] 
+[info] Firestore indexes allow you to perform complex queries while
+[info] maintaining performance that scales with the size of the result
+[info] set. You can keep index definitions in your project directory
+[info] and publish them with firebase deploy.
+[info] 
+[debug] [2025-02-16T05:22:50.927Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:50.928Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:50.928Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:50.928Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:50.928Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2025-02-16T05:22:50.931Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2025-02-16T05:22:51.189Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200
+[debug] [2025-02-16T05:22:51.191Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* {"fields":[{"name":"projects/ddingdong-mvp/databases/(default)/collectionGroups/__default__/fields/*","indexConfig":{"indexes":[{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"ASCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"DESCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","arrayConfig":"CONTAINS"}],"state":"READY"}]}}]}
+[debug] [2025-02-16T05:22:51.193Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2025-02-16T05:22:51.194Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/ddingdong-mvp/databases/(default)/collectionGroups/-/indexes {}
+[info] 
+=== Functions Setup
+[debug] [2025-02-16T05:22:51.196Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-16T05:22:51.196Z] > authorizing via signed-in user (noelstlee@gmail.com)
+[debug] [2025-02-16T05:22:51.196Z] [iam] checking project ddingdong-mvp for permissions ["firebase.projects.get"]
+[debug] [2025-02-16T05:22:51.196Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.196Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.197Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions [none]
+[debug] [2025-02-16T05:22:51.197Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:51.197Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T05:22:51.327Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions 200
+[debug] [2025-02-16T05:22:51.327Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ddingdong-mvp:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-02-16T05:22:51.337Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.337Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.337Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.337Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.337Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-02-16T05:22:51.337Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:51.347Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/runtimeconfig.googleapis.com [none]
+[debug] [2025-02-16T05:22:51.347Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:51.612Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/runtimeconfig.googleapis.com 200
+[debug] [2025-02-16T05:22:51.612Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2025-02-16T05:22:51.622Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com 200
+[debug] [2025-02-16T05:22:51.622Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2025-02-16T05:22:51.624Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.624Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:22:51.624Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com:enable [none]
+[debug] [2025-02-16T05:22:51.624Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com:enable x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:22:52.098Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com:enable 200
+[debug] [2025-02-16T05:22:52.098Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com:enable [omitted]
+[debug] [2025-02-16T05:23:02.103Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:23:02.107Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:23:02.108Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com [none]
+[debug] [2025-02-16T05:23:02.108Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/ddingdong-mvp
+[debug] [2025-02-16T05:23:02.404Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com 200
+[debug] [2025-02-16T05:23:02.404Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/ddingdong-mvp/services/cloudfunctions.googleapis.com [omitted]
+[info] Let's create a new codebase for your functions.
+[info] A directory corresponding to the codebase will be created in your project
+[info] with sample code pre-configured.
+
+[info] See https://firebase.google.com/docs/functions/organize-functions for
+[info] more information on organizing your functions using codebases.
+
+[info] Functions can be deployed with firebase deploy.
+
+[info] ✔  Wrote functions/package.json 
+[info] ✔  Wrote functions/.eslintrc.js 
+[info] ✔  Wrote functions/index.js 
+[info] ✔  Wrote functions/.gitignore 
+[info] 
 === Hosting Setup
-[debug] [2025-02-08T20:20:40.087Z] Checked if tokens are valid: true, expires at: 1739049638833
-[debug] [2025-02-08T20:20:40.087Z] Checked if tokens are valid: true, expires at: 1739049638833
-[debug] [2025-02-08T20:20:40.087Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp [none]
-[debug] [2025-02-08T20:20:40.283Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp 200
-[debug] [2025-02-08T20:20:40.283Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp {"projectId":"ddingdong-mvp","projectNumber":"365640667813","displayName":"ddingdong-mvp","name":"projects/ddingdong-mvp","resources":{"hostingSite":"ddingdong-mvp"},"state":"ACTIVE","etag":"1_694d7376-08ec-45d2-acb3-315889748c38"}
+[debug] [2025-02-16T05:24:07.612Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:24:07.612Z] Checked if tokens are valid: true, expires at: 1739686864376
+[debug] [2025-02-16T05:24:07.613Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp [none]
+[debug] [2025-02-16T05:24:07.793Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp 200
+[debug] [2025-02-16T05:24:07.793Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ddingdong-mvp {"projectId":"ddingdong-mvp","projectNumber":"365640667813","displayName":"ddingdong-mvp","name":"projects/ddingdong-mvp","resources":{"hostingSite":"ddingdong-mvp"},"state":"ACTIVE","etag":"1_694d7376-08ec-45d2-acb3-315889748c38"}
 [info] 
 [info] Your public directory is the folder (relative to your project directory) that
 [info] will contain Hosting assets to be uploaded with firebase deploy. If you

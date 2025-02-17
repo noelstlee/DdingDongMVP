@@ -217,34 +217,39 @@ const handleMarkDone = async (tableNumber, requestId) => {
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
       {/* Header */}
-      <div className="w-full flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold">Manager Dashboard</h1>
-        <div>
-          <button
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition mr-4"
-            onClick={() => router.push("/managerMain/settings")}
-          >
-            ⚙️ Settings
-          </button>
-          <button
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-            onClick={handleSignOut}
-          >
-            🔴 Sign Out
-          </button>
-        </div>
+      <div className="w-full flex items-center justify-between mb-6 relative">
+      {/* Centered Manager Dashboard */}
+      <h1 className="text-3xl font-bold absolute left-1/2 transform -translate-x-1/2">
+        Manager Dashboard
+      </h1>
+
+      {/* Right-aligned Buttons */}
+      <div className="ml-auto flex">
+        <button
+          className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition mr-4"
+          onClick={() => router.push("/managerMain/settings")}
+        >
+          ⚙️ Settings
+        </button>
+        <button
+          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          onClick={handleSignOut}
+        >
+          Sign Out
+        </button>
       </div>
+    </div>
 
       {/* Manager Info */}
       {managerData && (
         <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold mb-2">Welcome, {managerData.firstName} {managerData.lastName}!</h2>
+          <h2 className="text-lg font-bold mb-2">Manager: {managerData.firstName} {managerData.lastName}</h2>
           <p className="text-lg text-gray-400">Restaurant ID: {managerData.restaurantId}</p>
         </div>
       )}
 
       {/* Tables */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
       {tables.map((table) => {
         const tableNumber = String(table.tableNumber);
         const isServerCallActive = serverCallRequests.has(tableNumber);
@@ -304,9 +309,9 @@ const handleMarkDone = async (tableNumber, requestId) => {
               !req.resolved && req.requestType !== "special" && (
                 <div key={req.id} className="flex justify-between items-center bg-gray-700 p-3 mb-3 rounded-lg">
                   <div>
-                    <p className="text-lg font-semibold">Table {tableNumber}</p>
+                    <p className="text-xl font-semibold">Table {tableNumber}</p>
                     {req.items && req.items.map((item, index) => (
-                      <p key={index} className="text-gray-300 text-sm">
+                      <p key={index} className="text-gray-300 text-lg">
                         {item.quantity} x {item.item}
                       </p>
                     ))}
@@ -329,20 +334,20 @@ const handleMarkDone = async (tableNumber, requestId) => {
 {showPopup && selectedTable && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
     <div className="bg-white text-black p-6 rounded-lg shadow-lg w-96 max-h-96 overflow-y-auto">
-      <h2 className="text-xl font-bold mb-4">Requests for Table {selectedTable}</h2>
+      <h2 className="text-2xl text-center font-semibold mb-4">Table {selectedTable}</h2>
       <ul>
         {/* Show Regular Requests */}
         {tableRequests[selectedTable]?.map((req) => (
-          <li key={req.id} className="flex justify-between items-center bg-gray-200 p-2 mb-2 rounded-lg">
+          <li key={req.id} className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
             <div>
               {req.items?.map((item, index) => (
-                <p key={index} className="text-gray-700">
+                <p key={index} className="text-lg text-gray-700 font-medium">
                   {item.quantity} x {item.item}
                 </p>
               ))}
             </div>
             <button
-              className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               onClick={() => {
                 handleMarkDone(selectedTable, req.id);
               }}
@@ -354,10 +359,10 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
         {/* Show Server Call Request */}
         {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable) && (
-          <li className="flex justify-between items-center bg-gray-200 p-2 mb-2 rounded-lg">
-            <p className="text-gray-700">🛎️ Server Call</p>
+          <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+            <p className="text-lg font-medium text-gray-700">🛎️ Server Call</p>
             <button
-              className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               onClick={async () => {
                 const docId = serverCallRequests.get(selectedTable);
                 if (docId) {
@@ -377,10 +382,10 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
         {/* Show Bill Request */}
         {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (
-          <li className="flex justify-between items-center bg-gray-200 p-2 mb-2 rounded-lg">
-            <p className="text-gray-700">💳 Bill Requested</p>
+          <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+            <p className="text-lg font-medium text-gray-700">💳 Bill Requested</p>
             <button
-              className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               onClick={async () => {
                 const docId = billRequests.get(selectedTable);
                 if (docId) {
@@ -401,7 +406,7 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
       {/* Close Button */}
       <button
-        className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition w-full"
+        className="mt-4 px-5 py-3 text-lg bg-red-500 text-white rounded-lg hover:bg-red-600 transition w-full"
         onClick={closeTablePopup}
       >
         Close

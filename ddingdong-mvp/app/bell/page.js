@@ -13,7 +13,7 @@ function BellPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const restaurantId = searchParams.get("restaurantId");
-  const tableId = searchParams.get("tableId"); // ✅ Get from URL
+  const tableId = searchParams.get("tableId");
 
   const [menuURL, setMenuURL] = useState("");
   const [requestOptions, setRequestOptions] = useState([]);
@@ -76,7 +76,7 @@ function BellPageContent() {
       return;
     }
 
-    const formattedTableId = tableId.replace("Table ", "").trim(); // ✅ Convert "Table 3" -> "3"
+    const formattedTableId = tableId.replace("Table ", "").trim();
 
     const requestedItems = customRequest
       ? [{ item: customRequest, quantity: 1 }]
@@ -91,7 +91,7 @@ function BellPageContent() {
 
     try {
       await addDoc(collection(db, "requests"), {
-        table: formattedTableId, // ✅ Save only the table number
+        table: formattedTableId,
         items: requestedItems,
         resolved: false,
         timestamp: new Date(),
@@ -109,23 +109,26 @@ function BellPageContent() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>;
+    return <div className="flex justify-center items-center h-screen bg-white text-black text-xl font-semibold">Loading...</div>;
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen text-red-500 text-xl">
+      <div className="flex justify-center items-center h-screen bg-white text-red-500 text-xl font-semibold">
         {error}
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-3xl font-bold my-6 text-yellow-500">{tableId}</h1>
+    <div className={`flex flex-col items-center min-h-screen bg-white text-black p-6 relative ${poppins.className}`}>
+      
+      {/* Table Header */}
+      <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-6 text-center">{tableId}</h1>
 
+      {/* Menu Button */}
       <button
-        className="w-72 px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner mb-8"
+        className="w-full max-w-xs px-6 py-4 bg-[#FFC700] text-black text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-yellow-600 transition active:scale-95 mb-6"
         onClick={() => {
           if (menuURL) {
             window.open(menuURL, "_blank");
@@ -134,44 +137,44 @@ function BellPageContent() {
           }
         }}
       >
-        Menu
+        🍽️ View Menu 
       </button>
 
-      <div className="grid grid-cols-2 gap-6">
+      {/* Request Buttons */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-10">
         <button
-          className="w-40 px-4 py-3 bg-red-500 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-red-600"
+          className="w-full px-3 py-3 bg-[#FFB84D] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#E09E44] transition"
           onClick={() => handleRequest("Call Server")}
         >
-          Call Server 🛎️
+          🛎️ Call Server
         </button>
         <button
-          className="w-40 px-4 py-3 bg-blue-500 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-blue-600"
+          className="w-full px-3 py-3 bg-[#4D9DE0] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#3A7BBF] transition"
           onClick={() => handleRequest("Request Bill")}
         >
-          Request Bill 💳
+          💳 Request Bill
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 mt-6">
+      {/* Dynamically Generated Requests (2 per row) */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
         {requestOptions.map((request) => (
-          <div key={request.id} className="flex flex-col items-center">
-            <p className="text-lg font-semibold mb-2">{request.item}</p>
+          <div key={request.id} className="flex flex-col items-center w-full">
+            <p className="text-lg font-semibold mb-1">{request.item}</p>
             <div
-              className={`flex items-center rounded-lg px-4 py-3 transition-all ${
-                selectedItems[request.item] > 0
-                  ? "bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black"
-                  : "bg-gray-200 text-black"
+              className={`flex items-center justify-center w-full rounded-lg px-4 py-3 transition-all ${
+                selectedItems[request.item] > 0 ? "bg-[#FFC700] text-black" : "bg-gray-200 text-gray-700"
               }`}
             >
               <button
-                className="px-3 py-1 text-xl font-bold bg-gray-400 text-white rounded-l-lg hover:bg-gray-500"
+                className="px-3 py-1 text-xl font-semibold bg-gray-400 text-white rounded-l-lg hover:bg-gray-500"
                 onClick={() => handleItemClick(request.item, -1)}
               >
                 −
               </button>
-              <span className="px-5 text-lg">{selectedItems[request.item] || 0}</span>
+              <span className="px-5 text-lg font-medium">{selectedItems[request.item] || 0}</span>
               <button
-                className="px-3 py-1 text-xl font-bold bg-gray-400 text-white rounded-r-lg hover:bg-gray-500"
+                className="px-3 py-1 text-xl font-semibold bg-gray-400 text-white rounded-r-lg hover:bg-gray-500"
                 onClick={() => handleItemClick(request.item, 1)}
               >
                 +
@@ -181,16 +184,24 @@ function BellPageContent() {
         ))}
       </div>
 
+      {/* Bell Button - Fixed at Bottom Center */}
       <button
-        className="w-72 px-6 py-4 bg-transparent flex items-center justify-center mt-10"
+        className="w-30 h-30 md:w-28 md:h-28 fixed bottom-8 bg-white text-black flex items-center justify-center rounded-full shadow-lg border-2 border-gray-300 active:scale-90"
         onClick={() => handleRequest()}
+        style={{ boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.1)" }}
       >
-        <Image src="/assets/logo.png" alt="Dding Dong Logo" width={120} height={120} />
+        <Image src="/assets/logo.png" alt="Bell" width={90} height={90} />
       </button>
 
       {showConfirmation && (
-        <div className="fixed bottom-10 bg-black text-white px-6 py-3 rounded-lg shadow-lg text-center">
-          <p className="text-lg font-semibold">Request sent!</p>
+        <div
+          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                    bg-black bg-opacity-80 text-white px-12 py-6 rounded-lg shadow-lg 
+                    text-center text-xl backdrop-blur-md animate-fadeIn opacity-100 
+                    transition-opacity duration-1000 ease-in-out"
+          style={{ animation: "fadeOut 3s ease-in-out forwards" }}
+        >
+          <p className="font-semibold">Request sent!</p>
         </div>
       )}
     </div>
@@ -199,7 +210,7 @@ function BellPageContent() {
 
 export default function BellPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-500 text-xl">Loading...</div>}>
       <BellPageContent />
     </Suspense>
   );

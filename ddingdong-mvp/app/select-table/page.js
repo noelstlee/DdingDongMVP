@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Poppins } from "next/font/google";
 import { db } from "@/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import Image from "next/image";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
@@ -17,6 +18,7 @@ function SelectTablePageContent() {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     if (!restaurantId) {
@@ -29,31 +31,31 @@ function SelectTablePageContent() {
 
     const fetchTables = async () => {
       try {
-        // ✅ Check if tables are stored in subcollection
         const tableCollectionRef = collection(db, `tables/${restaurantId}/table_items`);
         const querySnapshot = await getDocs(tableCollectionRef);
 
+        let tableList = [];
+
         if (!querySnapshot.empty) {
-          const tableList = querySnapshot.docs.map((doc) => doc.id);
-          console.log("✅ Tables found in subcollection:", tableList);
-          setTables(tableList);
-          return;
-        }
-
-        // ✅ If subcollection fails, check if tables are stored in a document field
-        const restaurantDoc = await getDoc(doc(db, "tables", restaurantId));
-
-        if (restaurantDoc.exists()) {
-          const data = restaurantDoc.data();
-          if (data.table_items && Array.isArray(data.table_items)) {
-            console.log("✅ Tables found in document field:", data.table_items);
-            setTables(data.table_items);
-            return;
+          tableList = querySnapshot.docs.map((doc) => doc.id);
+        } else {
+          const restaurantDoc = await getDoc(doc(db, "tables", restaurantId));
+          if (restaurantDoc.exists()) {
+            const data = restaurantDoc.data();
+            if (data.table_items && Array.isArray(data.table_items)) {
+              tableList = data.table_items;
+            }
           }
         }
 
-        console.warn("❌ No tables found for restaurant:", restaurantId);
-        setTables([]);
+        if (tableList.length > 0) {
+          tableList.sort((a, b) => parseInt(a.replace(/\D/g, "")) - parseInt(b.replace(/\D/g, "")));
+          console.log("✅ Sorted Tables:", tableList);
+        } else {
+          console.warn("❌ No tables found for restaurant:", restaurantId);
+        }
+
+        setTables(tableList);
       } catch (error) {
         console.error("🔥 Error fetching tables:", error);
         setError("Error fetching tables. Please try again.");
@@ -65,19 +67,22 @@ function SelectTablePageContent() {
     fetchTables();
   }, [restaurantId, router]);
 
+  const handleTableClick = (table) => {
+    setSelectedTable(table);
+  };
+
   const handleConfirm = () => {
     if (!selectedTable) {
       alert("Please select a table.");
       return;
     }
 
-    // ✅ Redirect to Bell Page with selected table
     router.push(`/bell?restaurantId=${restaurantId}&tableId=${selectedTable}`);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen text-yellow-400 text-xl">
+      <div className="flex justify-center items-center min-h-screen bg-white text-black text-xl font-semibold">
         Loading...
       </div>
     );
@@ -85,41 +90,55 @@ function SelectTablePageContent() {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen text-red-500 text-xl">
+      <div className="flex justify-center items-center min-h-screen bg-white text-red-500 text-xl font-semibold">
         {error}
       </div>
     );
   }
 
+  
   return (
-    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-3xl font-bold my-4 text-yellow-500">Select Your Table</h1>
+    <div className={`flex flex-col justify-center items-center min-h-screen bg-white text-blue p-6 ${poppins.className}`}>
 
-      {/* Table List */}
-      <div className="w-72 bg-white text-black rounded-lg shadow-lg overflow-y-scroll max-h-60 border border-gray-400">
-        {tables.length === 0 ? (
-          <p className="text-gray-400 text-center py-4">No tables available.</p>
-        ) : (
-          tables.map((table) => (
-            <button
-              key={table}
-              className={`w-full px-6 py-3 text-lg font-semibold text-left ${
-                selectedTable === table ? "bg-yellow-400 text-black" : "hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTable(table)}
-            >
-              {table}
-            </button>
-          ))
-        )}
+      {/* Animated Logo */}
+      <div className="flex justify-center items-center mb-6">
+        <Image 
+          src="/assets/logo.png" 
+          alt="DdingDong Logo" 
+          width={120} 
+          height={120} 
+          className="animate-bounceSlow"
+        />
+      </div>
+
+      <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-semibold text-gray-900 mb-6 text-center">Please select your table number!</h1>
+
+      {/* Scrollable Table Selection */}
+      <div 
+        className="relative w-full max-w-sm h-60 overflow-y-scroll bg-gray-100 rounded-lg shadow-md flex flex-col items-center" 
+        ref={scrollRef}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} // Hide scrollbar
+      >
+        {tables.map((table) => (
+          <div
+            key={table}
+            className={`p-4 text-lg text-center cursor-pointer w-full flex items-center justify-center transition-all ${
+              selectedTable === table ? "font-semibold bg-[#FFC700] text-navy  shadow-lg" : "font-medium bg-gray-200 text-gray-500 hover:bg-gray-300"
+            }`}
+            onClick={() => handleTableClick(table)}
+          >
+            {table}
+          </div>
+        ))}
       </div>
 
       {/* Confirm Button */}
       <button
-        className={`w-72 px-6 py-3 mt-6 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
-                   shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner ${
-                     !selectedTable ? "opacity-50 cursor-not-allowed" : ""
-                   }`}
+        className={`mt-6 w-full max-w-sm px-6 py-3 text-xl rounded-lg shadow-md transition-all ${
+          selectedTable
+            ? "font-semibold bg-[#FFC700] text-navy hover:bg-[#FFC700] active:scale-95"
+            : "font-medium bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
         onClick={handleConfirm}
         disabled={!selectedTable}
       >
@@ -131,7 +150,7 @@ function SelectTablePageContent() {
 
 export default function SelectTablePage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-500 text-xl">Loading...</div>}>
       <SelectTablePageContent />
     </Suspense>
   );

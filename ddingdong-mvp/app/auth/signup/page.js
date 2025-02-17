@@ -17,28 +17,7 @@ export default function ManagerSignupPage() {
       localStorage.setItem("emailForSignIn", email);
       router.push("/auth/signupInfo");
     } catch (err) {
-<<<<<<< Updated upstream
-      console.error("Error during email signup process:", err);
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      window.localStorage.setItem("userEmail", user.email);
-      window.localStorage.setItem("userUID", user.uid);
-      window.localStorage.setItem("signupRole", role);
-
-      router.push(role === "manager" ? "/auth/extraInfoMan" : "/auth/extraInfo");
-    } catch (err) {
-      console.error("Google Signup Error:", err);
-      setError("Failed to sign up with Google. Please try again.");
-=======
       console.error("Error during signup:", err);
->>>>>>> Stashed changes
     }
   };
 

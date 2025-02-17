@@ -32,8 +32,6 @@ export default function ManagerSettingsPage() {
           Manage Request Menu 📜
         </button>
       </div>
-<<<<<<< Updated upstream
-=======
 
       {/* Table Customization */}
       <div className="mb-8">
@@ -56,7 +54,6 @@ export default function ManagerSettingsPage() {
           Input URL for Menu 🌐
         </button>
       </div>
->>>>>>> Stashed changes
     </div>
   );
 }

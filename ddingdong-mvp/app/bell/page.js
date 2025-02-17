@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Poppins } from "next/font/google";
 import Image from "next/image";
 import { db } from "@/firebase";
@@ -9,22 +9,23 @@ import { doc, getDoc, collection, addDoc, onSnapshot } from "firebase/firestore"
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
-export default function BellPage() {
+function BellPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const restaurantId = searchParams.get("restaurantId"); // ✅ Get from URL
+  const restaurantId = searchParams.get("restaurantId");
   const tableId = searchParams.get("tableId"); // ✅ Get from URL
 
-  const [menuURL, setMenuURL] = useState(""); // ✅ Store restaurant menu URL
-  const [requestOptions, setRequestOptions] = useState([]); // ✅ Dynamically loaded request buttons
+  const [menuURL, setMenuURL] = useState("");
+  const [requestOptions, setRequestOptions] = useState([]);
   const [selectedItems, setSelectedItems] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
-      alert("Invalid QR Code. Please scan again.");
-      router.push("/"); // Redirect back if data is missing
+      setError("Invalid QR Code. Please scan again.");
+      router.push("/");
       return;
     }
 
@@ -36,29 +37,36 @@ export default function BellPage() {
         } else {
           console.warn("No menu URL found for the restaurant.");
         }
-      } catch (error) {
-        console.error("Error fetching menu URL:", error);
+      } catch (err) {
+        console.error("Error fetching menu URL:", err);
+        setError("Failed to load menu URL. Please try again later.");
       }
     };
 
+    const unsubscribe = onSnapshot(
+      collection(db, "requestsMenu"),
+      (snapshot) => {
+        const requests = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((req) => req.restaurantId === restaurantId);
+        setRequestOptions(requests);
+      },
+      (err) => {
+        console.error("Error listening for request options:", err);
+        setError("Failed to load request options.");
+      }
+    );
+
     fetchMenuURL();
-
-    // ✅ Listen for dynamic request menu updates
-    const unsubscribe = onSnapshot(collection(db, "requestsMenu"), (snapshot) => {
-      const requests = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .filter((req) => req.restaurantId === restaurantId);
-      setRequestOptions(requests);
-    });
-
     setLoading(false);
-    return () => unsubscribe(); // ✅ Cleanup on unmount
+
+    return () => unsubscribe();
   }, [restaurantId, tableId, router]);
 
   const handleItemClick = (item, change) => {
     setSelectedItems((prev) => ({
       ...prev,
-      [item]: Math.max(0, (prev[item] || 0) + change), // ✅ Ensure quantity is non-negative
+      [item]: Math.max(0, (prev[item] || 0) + change),
     }));
   };
 
@@ -68,8 +76,10 @@ export default function BellPage() {
       return;
     }
 
+    const formattedTableId = tableId.replace("Table ", "").trim(); // ✅ Convert "Table 3" -> "3"
+
     const requestedItems = customRequest
-      ? [{ item: customRequest, quantity: 1 }] // ✅ Special requests
+      ? [{ item: customRequest, quantity: 1 }]
       : Object.entries(selectedItems)
           .filter(([, quantity]) => quantity > 0)
           .map(([item, quantity]) => ({ item, quantity }));
@@ -81,7 +91,7 @@ export default function BellPage() {
 
     try {
       await addDoc(collection(db, "requests"), {
-        table: tableId,
+        table: formattedTableId, // ✅ Save only the table number
         items: requestedItems,
         resolved: false,
         timestamp: new Date(),
@@ -92,8 +102,8 @@ export default function BellPage() {
       setSelectedItems({});
       setShowConfirmation(true);
       setTimeout(() => setShowConfirmation(false), 3000);
-    } catch (error) {
-      console.error("Error sending request:", error);
+    } catch (err) {
+      console.error("Error sending request:", err);
       alert("Failed to send request.");
     }
   };
@@ -102,30 +112,31 @@ export default function BellPage() {
     return <div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500 text-xl">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-3xl font-bold my-6 text-yellow-500"> {tableId}</h1>
+      <h1 className="text-3xl font-bold my-6 text-yellow-500">{tableId}</h1>
 
-      {/* ✅ Menu Button */}
       <button
-        className="w-72 px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
-                    shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner mb-8"
-<<<<<<< Updated upstream
-        onClick={() => restaurantId && router.push(`/menu/${restaurantId}`)} // ✅ Route dynamically
-=======
+        className="w-72 px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner mb-8"
         onClick={() => {
           if (menuURL) {
-            window.open(menuURL, "_blank"); // ✅ Open in new tab
+            window.open(menuURL, "_blank");
           } else {
             alert("Menu URL not available.");
           }
         }}
->>>>>>> Stashed changes
       >
         Menu
       </button>
 
-      {/* ✅ Fixed Call Server & Request Bill Buttons */}
       <div className="grid grid-cols-2 gap-6">
         <button
           className="w-40 px-4 py-3 bg-red-500 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-red-600"
@@ -141,7 +152,6 @@ export default function BellPage() {
         </button>
       </div>
 
-      {/* ✅ Dynamically Generated Request Buttons */}
       <div className="grid grid-cols-2 gap-6 mt-6">
         {requestOptions.map((request) => (
           <div key={request.id} className="flex flex-col items-center">
@@ -171,7 +181,6 @@ export default function BellPage() {
         ))}
       </div>
 
-      {/* ✅ Send Request Button */}
       <button
         className="w-72 px-6 py-4 bg-transparent flex items-center justify-center mt-10"
         onClick={() => handleRequest()}
@@ -179,12 +188,19 @@ export default function BellPage() {
         <Image src="/assets/logo.png" alt="Dding Dong Logo" width={120} height={120} />
       </button>
 
-      {/* ✅ Request Confirmation Popup */}
       {showConfirmation && (
         <div className="fixed bottom-10 bg-black text-white px-6 py-3 rounded-lg shadow-lg text-center">
           <p className="text-lg font-semibold">Request sent!</p>
         </div>
       )}
     </div>
+  );
+}
+
+export default function BellPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>}>
+      <BellPageContent />
+    </Suspense>
   );
 }

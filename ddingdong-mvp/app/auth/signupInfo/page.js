@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -11,31 +11,10 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 
 export default function SignupInfoPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const role = searchParams.get("role") || window.localStorage.getItem("signupRole"); // Retrieve role
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
-<<<<<<< Updated upstream
-  const validatePassword = (password) => {
-    if (password.length < 6) {
-      return "Password must be at least 6 characters.";
-    }
-    if (!/[A-Za-z]/.test(password)) {
-      return "Password must include at least one letter.";
-    }
-    if (!/[0-9]/.test(password)) {
-      return "Password must include at least one number.";
-    }
-    if (/(\w)\1{6,}/.test(password)) {
-      return "Password cannot have more than 7 sequentially identical characters.";
-    }
-    return null; // No errors
-  };
-
-=======
->>>>>>> Stashed changes
   const handleSignup = async () => {
     if (password.length < 6 || password !== confirmPassword) {
       setError("Passwords must match and be at least 6 characters long.");
@@ -43,51 +22,6 @@ export default function SignupInfoPage() {
     }
 
     try {
-<<<<<<< Updated upstream
-      const email = window.localStorage.getItem("emailForSignIn");
-      if (!email) {
-        setError("No email found. Please go back and sign up again.");
-        return;
-      }
-  
-      // Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
-      console.log("User created successfully:", user);
-  
-      if (!user) {
-        console.error("❌ User authentication failed.");
-        setError("Authentication error. Please try again.");
-        return;
-      }
-  
-      // Save user details in Firestore based on role
-      const userCollection = role === "manager" ? "managers" : "customers";
-      const userDoc = doc(db, userCollection, user.uid);
-      await setDoc(userDoc, {
-        email: user.email,
-        role: role,
-        uid: user.uid, // Store UID for security checks
-      });
-  
-      console.log(`✅ User saved to Firestore in ${role} collection.`);
-  
-      // Redirect based on role
-      router.push(role === "manager" ? "/auth/extraInfoMan" : "/auth/extraInfo");
-    } catch (err) {
-      console.error("Error creating user:", err);
-      if (err.code === "auth/email-already-in-use") {
-        setError("This email is already in use.");
-      } else if (err.code === "permission-denied") {
-        setError("Permission denied. Check Firebase rules.");
-      } else {
-        setError("Failed to create account. Please try again.");
-      }
-    }
-  };
-  
-=======
       const email = localStorage.getItem("emailForSignIn");
       if (!email) {
         setError("No email found. Please sign up again.");
@@ -110,7 +44,6 @@ export default function SignupInfoPage() {
     }
   };
 
->>>>>>> Stashed changes
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
       <h1 className="text-4xl font-bold mb-6">Set Your Password</h1>

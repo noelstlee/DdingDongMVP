@@ -1,72 +1,26 @@
 "use client";
 
-<<<<<<< Updated upstream
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Poppins } from "next/font/google";
-import { auth, db } from "@/firebase"; // Import Firebase auth and Firestore
-import { doc, setDoc } from "firebase/firestore";
-=======
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
 import { Poppins } from "next/font/google";
 import { db } from "@/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
->>>>>>> Stashed changes
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
-export default function SelectTablePage() {
+function SelectTablePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const restaurantId = searchParams.get("restaurantId");
 
   const [selectedTable, setSelectedTable] = useState(null);
-<<<<<<< Updated upstream
-
-  const tables = Array.from({ length: 10 }, (_, i) => `Table ${i + 1}`); // Generate Table 1-10
-
-  const handleConfirm = async () => {
-    if (!selectedTable) return;
-  
-    const user = auth.currentUser;
-    if (!user) {
-      alert("Please log in to continue.");
-      return;
-    }
-  
-    const restaurantId = localStorage.getItem("selectedRestaurantId");
-  
-    if (!restaurantId) {
-      alert("Error: No restaurant selected.");
-      return;
-    }
-  
-    try {
-      // Save customer details in Firestore (ensure no overwrites)
-      await setDoc(
-        doc(db, "customers", user.uid),
-        {
-          email: user.email,
-          restaurantId,
-          tableNumber: selectedTable,
-          role: "customer",
-        },
-        { merge: true } // Use merge to avoid overwriting other fields
-      );
-  
-      router.push("/bell");
-    } catch (error) {
-      console.error("Error saving customer details:", error);
-      alert("Failed to save table selection. Please try again.");
-    }
-=======
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!restaurantId) {
-      alert("Error: No restaurant ID found. Please scan the QR code again.");
+      setError("Error: No restaurant ID found. Please scan the QR code again.");
       router.push("/");
       return;
     }
@@ -102,7 +56,7 @@ export default function SelectTablePage() {
         setTables([]);
       } catch (error) {
         console.error("🔥 Error fetching tables:", error);
-        alert("Error fetching tables. Please try again.");
+        setError("Error fetching tables. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -119,15 +73,20 @@ export default function SelectTablePage() {
 
     // ✅ Redirect to Bell Page with selected table
     router.push(`/bell?restaurantId=${restaurantId}&tableId=${selectedTable}`);
->>>>>>> Stashed changes
   };
-  
-  
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-yellow-400 text-xl">
         Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-red-500 text-xl">
+        {error}
       </div>
     );
   }
@@ -167,5 +126,13 @@ export default function SelectTablePage() {
         Confirm
       </button>
     </div>
+  );
+}
+
+export default function SelectTablePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-400 text-xl">Loading...</div>}>
+      <SelectTablePageContent />
+    </Suspense>
   );
 }

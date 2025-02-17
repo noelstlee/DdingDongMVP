@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth"; // ✅ Import auth state listener
+import { onAuthStateChanged } from "firebase/auth";
 import { Poppins } from "next/font/google";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
@@ -17,20 +17,19 @@ export default function ExtraInfoManPage() {
   const [birthday, setBirthday] = useState("");
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true); // ✅ Added loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ✅ Properly listen for authentication state
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        router.push("/auth/signup"); // Redirect if not logged in
+        router.push("/auth/signup");
       } else {
         setUser(currentUser);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup
+    return () => unsubscribe();
   }, [router]);
 
   const handleContinue = async () => {
@@ -45,7 +44,7 @@ export default function ExtraInfoManPage() {
         return;
       }
 
-      setError(""); // Clear previous errors
+      setError("");
 
       const restaurantRef = doc(db, "restaurants", restaurantCode);
       const restaurantSnap = await getDoc(restaurantRef);
@@ -55,7 +54,6 @@ export default function ExtraInfoManPage() {
         return;
       }
 
-      // ✅ Save manager details properly with merge option
       await setDoc(
         doc(db, "managers", user.uid),
         {
@@ -65,14 +63,13 @@ export default function ExtraInfoManPage() {
           birthday,
           restaurantId: restaurantCode,
         },
-        { merge: true } // ✅ Prevents overwriting existing data
+        { merge: true }
       );
 
-      // ✅ Store manager data in local storage
       localStorage.setItem("managerEmail", user.email);
       localStorage.setItem("role", "manager");
 
-      router.push("/managerMain"); // ✅ Directly go to manager dashboard
+      router.push("/managerMain");
     } catch (err) {
       console.error("Error saving manager details:", err);
       setError("Failed to save details. Please try again.");
@@ -84,55 +81,76 @@ export default function ExtraInfoManPage() {
   }
 
   return (
-    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-3xl font-bold mb-6">Manager Extra Information</h1>
-
-      {/* Restaurant Code Input */}
-      <input
-        type="text"
-        placeholder="Restaurant Code"
-        value={restaurantCode}
-        onChange={(e) => setRestaurantCode(e.target.value)}
-        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
-      />
-
-      {/* First Name Input */}
-      <input
-        type="text"
-        placeholder="First Name"
-        value={firstName}
-        onChange={(e) => setFirstName(e.target.value)}
-        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
-      />
-
-      {/* Last Name Input */}
-      <input
-        type="text"
-        placeholder="Last Name"
-        value={lastName}
-        onChange={(e) => setLastName(e.target.value)}
-        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
-      />
-
-      {/* Birthday Input */}
-      <input
-        type="date"
-        value={birthday}
-        onChange={(e) => setBirthday(e.target.value)}
-        className="w-64 px-4 py-3 border border-gray-400 bg-white text-black rounded mb-4 focus:outline-none"
-      />
-
-      {/* Error Message */}
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-
-      {/* Continue Button */}
+    <div className={`flex justify-center items-center h-screen bg-gray-900 text-white relative ${poppins.className}`}>
+      
+      {/* Back Button */}
       <button
-        className="w-64 px-6 py-3 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded 
-                   shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
-        onClick={handleContinue}
+        className="absolute left-4 top-4 text-yellow-400 text-lg hover:text-yellow-500 transition"
+        onClick={() => router.push("/auth/signupInfo")}
       >
-        Continue
+        ← Back
       </button>
+
+      <div className="w-96 bg-gray-800 p-6 rounded-lg shadow-lg text-center">
+        
+        {/* Header */}
+        <h1 className="text-3xl font-bold mb-6">Manager Extra Information</h1>
+
+        {/* Input Fields Container */}
+        <div className="flex flex-col space-y-4">
+          
+          {/* Restaurant Code Input */}
+          <input
+            type="text"
+            placeholder="Restaurant Code"
+            value={restaurantCode}
+            onChange={(e) => setRestaurantCode(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
+                       focus:ring-2 focus:ring-yellow-500 transition-all"
+          />
+
+          {/* First Name Input */}
+          <input
+            type="text"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
+                       focus:ring-2 focus:ring-yellow-500 transition-all"
+          />
+
+          {/* Last Name Input */}
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
+                       focus:ring-2 focus:ring-yellow-500 transition-all"
+          />
+
+          {/* Birthday Input */}
+          <input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
+                       focus:ring-2 focus:ring-yellow-500 transition-all"
+          />
+        </div>
+
+        {/* Error Message */}
+        {error && <p className="text-red-500 font-semibold mt-3">{error}</p>}
+
+        {/* Continue Button */}
+        <button
+          className="w-full px-6 py-3 mt-6 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
+                     shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
+          onClick={handleContinue}
+        >
+          Continue
+        </button>
+      </div>
     </div>
   );
 }

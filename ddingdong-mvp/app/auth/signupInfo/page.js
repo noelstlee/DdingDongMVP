@@ -45,25 +45,50 @@ export default function SignupInfoPage() {
   };
 
   return (
-    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-4xl font-bold mb-6">Set Your Password</h1>
+    <div className={`flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white relative ${poppins.className}`}>
+      
+      {/* Back Button */}
+      <button
+        className="absolute left-4 top-4 text-yellow-400 text-lg hover:text-yellow-500 transition"
+        onClick={() => router.push("/auth/signup")}
+      >
+        ← Back
+      </button>
 
-      {/* Password Input */}
-      <input type="password" placeholder="Enter Password" value={password} onChange={(e) => setPassword(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
-      />
+      {/* Header */}
+      <h1 className="text-4xl font-bold mb-8 text-center">Create Your Account</h1>
 
-      {/* Confirm Password Input */}
-      <input type="password" placeholder="Confirm Password" value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        className="w-72 px-4 py-3 border border-gray-500 bg-white text-black rounded-lg mb-4 shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all"
-      />
+      {/* Input Fields Container */}
+      <div className="w-80 flex flex-col space-y-4">
+        
+        {/* Password Input */}
+        <input
+          type="password"
+          placeholder="Enter Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white rounded-lg shadow-lg 
+                     focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all"
+        />
+
+        {/* Confirm Password Input */}
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white rounded-lg shadow-lg 
+                     focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all"
+        />
+      </div>
 
       {/* Error Message */}
-      {error && <p className="text-red-500 font-semibold mb-4">{error}</p>}
+      {error && <p className="text-red-500 font-semibold mt-3">{error}</p>}
 
       {/* Signup Button */}
-      <button className="w-72 px-6 py-3 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
+      <button
+        className="w-80 px-6 py-3 mt-6 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-xl font-bold rounded-lg 
+                   shadow-[0_4px_0_#b38600] hover:bg-yellow-600 transition active:translate-y-1 active:shadow-inner"
         onClick={handleSignup}
       >
         Create Account

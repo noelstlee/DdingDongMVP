@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/firebase";
-import { collection, query, where, onSnapshot, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { Poppins } from "next/font/google";
 
 import { signOut } from "firebase/auth";
@@ -26,6 +26,8 @@ export default function ManagerMainPage() {
 
   const [selectedTable, setSelectedTable] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+
+  const [showSignOutPopup, setShowSignOutPopup] = useState(false); // Sign Out Confirmation Popup
 
   useEffect(() => {
     const fetchManagerData = async () => {
@@ -232,11 +234,11 @@ const handleMarkDone = async (tableNumber, requestId) => {
           ⚙️ Settings
         </button>
         <button
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-          onClick={handleSignOut}
-        >
-          Sign Out
-        </button>
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+            onClick={() => setShowSignOutPopup(true)} // Open confirmation popup
+          >
+            Sign Out
+          </button>
       </div>
     </div>
 
@@ -245,6 +247,32 @@ const handleMarkDone = async (tableNumber, requestId) => {
         <div className="mb-6 text-center">
           <h2 className="text-lg font-bold mb-2">Manager: {managerData.firstName} {managerData.lastName}</h2>
           <p className="text-lg text-gray-400">Restaurant ID: {managerData.restaurantId}</p>
+        </div>
+      )}
+
+
+      {/* Sign Out Confirmation Popup */}
+      {showSignOutPopup && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h2 className="text-lg font-medium mb-4">Are you sure you want to sign out?</h2>
+            <div className="flex justify-center space-x-4">
+              <button
+                className="px-6 py-3 bg-red-500 text-white text-lg font-medium rounded-lg shadow-[0_4px_0_#b30000] 
+                          transition active:translate-y-1 active:shadow-inner"
+                onClick={handleSignOut}
+              >
+                Yes, Sign Out
+              </button>
+              <button
+                className="px-6 py-3 bg-gray-500 text-white text-lg font-medium rounded-lg shadow-md transition 
+                          active:translate-y-1 active:shadow-inner"
+                onClick={() => setShowSignOutPopup(false)} // Close popup
+              >
+                No, Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -330,90 +358,147 @@ const handleMarkDone = async (tableNumber, requestId) => {
       </div>
       
   
-{/* Table Requests Popup */}
-{showPopup && selectedTable && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-    <div className="bg-white text-black p-6 rounded-lg shadow-lg w-96 max-h-96 overflow-y-auto">
-      <h2 className="text-2xl text-center font-semibold mb-4">Table {selectedTable}</h2>
-      <ul>
-        {/* Show Regular Requests */}
-        {tableRequests[selectedTable]?.map((req) => (
-          <li key={req.id} className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
-            <div>
-              {req.items?.map((item, index) => (
-                <p key={index} className="text-lg text-gray-700 font-medium">
-                  {item.quantity} x {item.item}
-                </p>
+      {/* Table Requests Popup */}
+      {showPopup && selectedTable && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white text-black p-6 rounded-lg shadow-lg w-96 max-h-96 overflow-y-auto relative">
+            
+            {/* Close Button (Top-Right) */}
+            <button
+              className="absolute top-3 right-3 text-2xl font-bold text-gray-600 hover:text-gray-900 transition"
+              onClick={closeTablePopup}
+            >
+              ✖
+            </button>
+
+            {/* Table Title */}
+            <h2 className="text-2xl text-center font-semibold mb-4">Table {selectedTable}</h2>
+
+            <ul>
+              {/* Show Regular Requests */}
+              {tableRequests[selectedTable]?.map((req) => (
+                <li key={req.id} className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+                  <div>
+                    {req.items?.map((item, index) => (
+                      <p key={index} className="text-lg text-gray-700 font-medium">
+                        {item.quantity} x {item.item}
+                      </p>
+                    ))}
+                  </div>
+                  <button
+                    className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    onClick={() => handleMarkDone(selectedTable, req.id)}
+                  >
+                    Mark Done
+                  </button>
+                </li>
               ))}
-            </div>
-            <button
-              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-              onClick={() => {
-                handleMarkDone(selectedTable, req.id);
-              }}
-            >
-              Mark Done
-            </button>
-          </li>
-        ))}
 
-        {/* Show Server Call Request */}
-        {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable) && (
-          <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
-            <p className="text-lg font-medium text-gray-700">🛎️ Server Call</p>
-            <button
-              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-              onClick={async () => {
-                const docId = serverCallRequests.get(selectedTable);
-                if (docId) {
-                  await updateDoc(doc(db, "serverCallRequest", docId), { resolved: true });
-                  setServerCallRequests((prev) => {
-                    const updated = new Map(prev);
-                    updated.delete(selectedTable); // ✅ Correctly remove for the right table
-                    return updated;
-                  });
+              {/* Show Server Call Request */}
+              {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable) && (
+                <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+                  <p className="text-lg font-medium text-gray-700">🛎️ Server Call</p>
+                  <button
+                    className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    onClick={async () => {
+                      const docId = serverCallRequests.get(selectedTable);
+                      if (docId) {
+                        await updateDoc(doc(db, "serverCallRequest", docId), { resolved: true });
+                        setServerCallRequests((prev) => {
+                          const updated = new Map(prev);
+                          updated.delete(selectedTable);
+                          return updated;
+                        });
+                      }
+                    }}
+                  >
+                    Mark Done
+                  </button>
+                </li>
+              )}
+
+              {/* Show Bill Request */}
+              {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (
+                <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+                  <p className="text-lg font-medium text-gray-700">💳 Bill Requested</p>
+                  <button
+                    className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                    onClick={async () => {
+                      const docId = billRequests.get(selectedTable);
+                      if (docId) {
+                        await updateDoc(doc(db, "billRequest", docId), { resolved: true });
+                        setBillRequests((prev) => {
+                          const updated = new Map(prev);
+                          updated.delete(selectedTable);
+                          return updated;
+                        });
+                      }
+                    }}
+                  >
+                    Mark Done
+                  </button>
+                </li>
+              )}
+            </ul>
+
+          {/* Clear All Requests (Bottom) */}
+          <button
+            className="mt-4 px-5 py-3 text-lg bg-red-500 text-white rounded-lg hover:bg-red-600 transition w-full"
+            onClick={async () => {
+              try {
+                if (!restaurantId || !selectedTable) return;
+
+                const collections = ["requests", "serverCallRequest", "billRequest"];
+
+                for (const collectionName of collections) {
+                  const q = query(
+                    collection(db, collectionName),
+                    where("restaurantId", "==", restaurantId),
+                    where("table", "==", selectedTable)
+                  );
+
+                  const querySnapshot = await getDocs(q);
+                  if (!querySnapshot.empty) {
+                    const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
+                    await Promise.all(deletePromises);
+                  }
                 }
-              }}
-            >
-              Mark Done
-            </button>
-          </li>
-        )}
 
-        {/* Show Bill Request */}
-        {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (
-          <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
-            <p className="text-lg font-medium text-gray-700">💳 Bill Requested</p>
-            <button
-              className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-              onClick={async () => {
-                const docId = billRequests.get(selectedTable);
-                if (docId) {
-                  await updateDoc(doc(db, "billRequest", docId), { resolved: true });
-                  setBillRequests((prev) => {
-                    const updated = new Map(prev);
-                    updated.delete(selectedTable); // ✅ Remove correctly for only this table
-                    return updated;
-                  });
-                }
-              }}
-            >
-              Mark Done
-            </button>
-          </li>
-        )}
-      </ul>
+                // ✅ Clear UI state
+                setTableRequests((prev) => {
+                  const updated = { ...prev };
+                  delete updated[selectedTable];
+                  return updated;
+                });
 
-      {/* Close Button */}
-      <button
-        className="mt-4 px-5 py-3 text-lg bg-red-500 text-white rounded-lg hover:bg-red-600 transition w-full"
-        onClick={closeTablePopup}
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
+                setServerCallRequests((prev) => {
+                  const updated = new Map(prev);
+                  updated.delete(selectedTable);
+                  return updated;
+                });
+
+                setBillRequests((prev) => {
+                  const updated = new Map(prev);
+                  updated.delete(selectedTable);
+                  return updated;
+                });
+
+                // ✅ Close the popup
+                setShowPopup(false);
+
+                alert(`✅ All requests for Table ${selectedTable} have been cleared.`);
+              } catch (err) {
+                console.error("❌ Error clearing requests:", err);
+                alert("Failed to clear requests. Please try again.");
+              }
+            }}
+          >
+            🗑️ Clear All Requests
+          </button>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

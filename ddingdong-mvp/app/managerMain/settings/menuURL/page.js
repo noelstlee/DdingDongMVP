@@ -71,41 +71,51 @@ export default function MenuURLPage() {
         { menuURL },
         { merge: true } // Merge to avoid overwriting other fields
       );
-      alert("Menu URL saved successfully!");
+      alert("✅ Menu URL saved successfully!");
       router.push("/managerMain/settings");
     } catch (error) {
-      console.error("Error saving menu URL:", error);
+      console.error("❌ Error saving menu URL:", error);
       alert("Failed to save menu URL. Please try again.");
     }
   };
 
   return (
-    <div className={`p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-4xl font-bold mb-6">Input URL for Menu</h1>
-
-      <div className="mb-4">
-        <label className="block mb-2 text-lg font-semibold">Menu URL</label>
-        <input
-          type="url"
-          className="w-full p-3 rounded-lg bg-gray-700 text-white"
-          placeholder="https://example.com/menu"
-          value={menuURL}
-          onChange={(e) => setMenuURL(e.target.value)}
-        />
-      </div>
-
+    <div className={`flex flex-col items-center justify-center min-h-screen p-6 bg-gray-900 text-white font-semibold ${poppins.className}`}>
+      
+      {/* Back Button (Fixed at Top-Left) */}
       <button
-        className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg"
-        onClick={handleSave}
-      >
-        Save Menu URL
-      </button>
-      <button
-        className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg mt-4"
+        className="absolute left-4 top-4 text-yellow-400 text-lg hover:text-yellow-500 transition font-medium"
         onClick={() => router.push("/managerMain/settings")}
       >
-        Back to Settings
+        ← Back
       </button>
+
+      {/* Header (Centered) */}
+      <h1 className="text-3xl font-semibold text-center mb-6">Enter Menu URL</h1>
+
+      {/* Settings Container */}
+      <div className="w-full max-w-lg space-y-6 text-center">
+        
+        {/* Menu URL Input */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <input
+            type="url"
+            className="w-full text-medium p-3 bg-gray-700 text-white rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            placeholder="https://example.com/menu"
+            value={menuURL}
+            onChange={(e) => setMenuURL(e.target.value)}
+          />
+        </div>
+
+        {/* Save Button */}
+        <button
+          className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                    shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+          onClick={handleSave}
+        >
+          Save
+        </button>
+      </div>
     </div>
   );
 }

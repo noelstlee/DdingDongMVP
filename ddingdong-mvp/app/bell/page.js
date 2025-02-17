@@ -22,6 +22,7 @@ function BellPageContent() {
   const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("Request sent!");
+  const [showBillConfirmation, setShowBillConfirmation] = useState(false); // New state for bill confirmation popup
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
@@ -110,6 +111,42 @@ function BellPageContent() {
     }
   };
 
+  const handleBillRequest = () => {
+    setShowBillConfirmation(true); // ✅ Fix: Open popup
+  };
+
+  const confirmBillRequest = async () => {
+    setShowBillConfirmation(false);
+
+    if (!restaurantId || !tableId) {
+      alert("Error: Missing restaurant or table information.");
+      return;
+    }
+
+    const formattedTableId = tableId.replace("Table ", "").trim();
+
+    try {
+      // Add bill request to Firestore
+      await addDoc(collection(db, "billRequest"), {
+        table: formattedTableId,
+        items: [{ item: "Bill Request", quantity: 1 }],
+        resolved: false,
+        timestamp: new Date(),
+        restaurantId,
+        requestType: "bill",
+      });
+
+
+      // Redirect to survey page
+      router.push("/survey");
+
+    } catch (err) {
+      console.error("Error handling bill request:", err);
+      alert("Failed to process bill request.");
+    }
+  };
+
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-white text-black text-xl font-semibold">Loading...</div>;
   }
@@ -152,11 +189,26 @@ function BellPageContent() {
         </button>
         <button
           className="w-full px-3 py-3 bg-[#F4A261] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#DC8A50] transition"
-          onClick={() => handleRequest("Request Bill", "billRequest", "Your bill is on its way!")}
+          onClick={handleBillRequest} // ✅ Correctly use handleBillRequest
         >
           💳 Request Bill
         </button>
       </div>
+
+      {/* Bill Request Confirmation Popup */}
+        {showBillConfirmation && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h2 className="text-2xl font-medium mb-4">Are you sure you want to request the bill?</h2>
+            <button className="px-6 py-3 bg-red-500 text-white text-md font-semibold rounded-lg shadow-md transition" onClick={confirmBillRequest}>
+              Yes
+            </button>
+            <button className="px-6 py-3 bg-gray-500 text-white text-md font-semibold rounded-lg shadow-md transition ml-4" onClick={() => setShowBillConfirmation(false)}>
+              No
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Dynamically Generated Requests (2 per row) */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-xs">

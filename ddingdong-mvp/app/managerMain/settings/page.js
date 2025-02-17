@@ -10,49 +10,58 @@ export default function ManagerSettingsPage() {
   const router = useRouter();
 
   return (
-    <div className={`p-5 bg-white text-black min-h-screen ${poppins.className}`}>
-      {/* Back Button */}
+    <div className={`flex flex-col items-center justify-center min-h-screen p-6 bg-gray-900 text-white font-medium ${poppins.className}`}>
+      
+      {/* Back Button (Fixed at Top-Left, Medium Font) */}
+
       <button
-        className="text-black bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold mb-4"
+        className="absolute left-4 top-4 text-yellow-400 text-lg hover:text-yellow-500 transition"
         onClick={() => router.push("/managerMain")}
       >
-        ← Back to Main
+        ← Back
       </button>
 
-      <h1 className="text-4xl font-bold mb-6">Manager Settings</h1>
+      {/* Header (Centered, SemiBold) */}
+      <h1 className="text-3xl font-semibold text-center mb-6">Manager Settings</h1>
 
+      {/* Settings Container */}
+      <div className="w-full max-w-lg space-y-6 text-center">
+        
+        {/* Request Menu Customization */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-medium mb-4">Customize Special Requests</h2>
+          <button 
+            className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                      shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+            onClick={() => router.push("/managerMain/settings/requests")}
+          >
+            ☝️ Manage Request Options
+          </button>
+        </div>
 
-      {/* Request Menu Customization */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Customize Special Requests</h2>
-        <button 
-          className="w-full bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black font-bold py-3 rounded-lg"
-          onClick={() => router.push("/managerMain/settings/requests")}
-        >
-          Manage Request Menu 📜
-        </button>
-      </div>
+        {/* Table Customization */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-medium mb-4">Customize Tables</h2>
+          <button 
+            className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                      shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+            onClick={() => router.push("/managerMain/settings/tables")}
+          >
+            🪑 Manage Tables
+          </button>
+        </div>
 
-      {/* Table Customization */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Customize Tables</h2>
-        <button 
-          className="w-full bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black font-bold py-3 rounded-lg"
-          onClick={() => router.push("/managerMain/settings/tables")}
-        >
-          Manage Tables 🪑
-        </button>
-      </div>
-
-      {/* Menu URL Customization */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4">Customize Menu URL</h2>
-        <button
-          className="w-full bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black font-bold py-3 rounded-lg"
-          onClick={() => router.push("/managerMain/settings/menuURL")}
-        >
-          Input URL for Menu 🌐
-        </button>
+        {/* Menu URL Customization */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-medium mb-4">Customize Menu URL</h2>
+          <button
+            className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                      shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+            onClick={() => router.push("/managerMain/settings/menuURL")}
+          >
+            🌐 Input URL for Menu
+          </button>
+        </div>
       </div>
     </div>
   );

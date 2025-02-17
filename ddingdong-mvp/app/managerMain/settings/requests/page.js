@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { db, auth } from "@/firebase"; // Ensure auth is imported
-import { collection, getDocs, addDoc, deleteDoc, doc, getDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation"; 
+import { db, auth } from "@/firebase"; 
+import { collection, addDoc, deleteDoc, doc, getDoc, onSnapshot, query, where } from "firebase/firestore";
 import { Poppins } from "next/font/google";
 
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
 export default function ManageRequestsPage() {
+  const router = useRouter(); 
   const [requests, setRequests] = useState([]);
   const [newRequest, setNewRequest] = useState("");
   const [restaurantId, setRestaurantId] = useState(null);
 
+  // Fetch restaurant ID
   useEffect(() => {
     const fetchManagerData = async () => {
       const user = auth.currentUser;
@@ -36,62 +39,103 @@ export default function ManageRequestsPage() {
     fetchManagerData();
   }, []);
 
+  // Fetch & Sync Requests in Real Time
   useEffect(() => {
     if (!restaurantId) return;
 
-    const fetchRequests = async () => {
-      const snapshot = await getDocs(collection(db, "requestsMenu"));
-      setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(req => req.restaurantId === restaurantId));
-    };
+    const q = query(collection(db, "requestsMenu"), where("restaurantId", "==", restaurantId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
 
-    fetchRequests();
+    return () => unsubscribe(); // Clean up listener
   }, [restaurantId]);
 
+  // Add a new request
   const handleAddRequest = async () => {
-    if (!newRequest) return alert("Please enter a request item.");
-    if (!restaurantId) return alert("Error: Restaurant ID not found. Please try again.");
+    if (!newRequest.trim()) {
+      alert("Please enter a request item.");
+      return;
+    }
+    if (!restaurantId) {
+      alert("Error: Restaurant ID not found. Please try again.");
+      return;
+    }
 
     try {
       await addDoc(collection(db, "requestsMenu"), { item: newRequest, restaurantId });
-      setNewRequest("");
-      alert("✅ Request added successfully!");
+      setNewRequest(""); // Clear input after adding
     } catch (error) {
       console.error("❌ Error adding request:", error);
     }
   };
 
+  // Delete a request
   const handleDeleteRequest = async (id) => {
-    await deleteDoc(doc(db, "requestsMenu", id));
-    setRequests(requests.filter(req => req.id !== id));
+    try {
+      await deleteDoc(doc(db, "requestsMenu", id));
+    } catch (error) {
+      console.error("❌ Error deleting request:", error);
+    }
   };
 
   return (
-    <div className={`p-5 bg-gray-900 text-white ${poppins.className}`}>
-      <h1 className="text-4xl font-bold mb-6">Manage Request Menu</h1>
+    <div className={`flex flex-col items-center justify-center min-h-screen p-6 bg-gray-900 text-white font-semibold ${poppins.className}`}>
+      
+      {/* Back Button (Fixed at Top-Left) */}
+      <button
+        className="absolute left-4 top-4 text-yellow-400 text-lg hover:text-yellow-500 transition font-medium"
+        onClick={() => router.push("/managerMain/settings")}
+      >
+        ← Back
+      </button>
 
-      {/* Add New Request */}
-      <div className="mb-8 p-4 bg-gray-800 rounded-lg">
-        <input 
-          type="text" placeholder="New Request" 
-          className="w-full p-2 mb-2 bg-gray-700 text-white" 
-          value={newRequest} 
-          onChange={(e) => setNewRequest(e.target.value)} 
-        />
-        <button 
-          className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg"
-          onClick={handleAddRequest}
-        >
-          Add Request ➕
-        </button>
-      </div>
+      {/* Header (Centered) */}
+      <h1 className="text-2xl font-semibold text-center mb-6">Add a New Request Option</h1>
 
-      {/* Request List */}
-      {requests.map(req => (
-        <div key={req.id} className="flex justify-between items-center bg-gray-800 p-4 mb-2 rounded-lg">
-          <p>{req.item}</p>
-          <button className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg" onClick={() => handleDeleteRequest(req.id)}>❌</button>
+      {/* Settings Container */}
+      <div className="w-full max-w-lg space-y-6 text-center">
+        
+        {/* Add New Request */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <input 
+            type="text" placeholder="Enter request item..." 
+            className="w-full p-3 mb-4 bg-gray-700 text-white rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            value={newRequest} 
+            onChange={(e) => setNewRequest(e.target.value)} 
+          />
+          <button 
+            className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                      shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+            onClick={handleAddRequest}
+          >
+            ➕ Add Request
+          </button>
         </div>
-      ))}
+
+        {/* Existing Requests List */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">Current Requests</h2>
+          {requests.length === 0 ? (
+            <p className="text-gray-400">No special requests added yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {requests.map(req => (
+                <div key={req.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-lg">
+                  <p className="text-lg">{req.item}</p>
+                  <button 
+                    className="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-[0_4px_0_#b30000] 
+                              transition active:translate-y-1 active:shadow-inner"
+                    onClick={() => handleDeleteRequest(req.id)}
+                  >
+                    ❌
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

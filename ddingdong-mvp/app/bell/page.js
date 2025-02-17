@@ -21,6 +21,7 @@ function BellPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState("Request sent!");
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
@@ -70,7 +71,7 @@ function BellPageContent() {
     }));
   };
 
-  const handleRequest = async (customRequest = null) => {
+  const handleRequest = async (customRequest = null, collectionName = "requests", message = "Request sent!") => {
     if (!restaurantId || !tableId) {
       alert("Error: Missing restaurant or table information.");
       return;
@@ -90,7 +91,7 @@ function BellPageContent() {
     }
 
     try {
-      await addDoc(collection(db, "requests"), {
+      await addDoc(collection(db, collectionName), {
         table: formattedTableId,
         items: requestedItems,
         resolved: false,
@@ -100,6 +101,7 @@ function BellPageContent() {
       });
 
       setSelectedItems({});
+      setConfirmationMessage(message);
       setShowConfirmation(true);
       setTimeout(() => setShowConfirmation(false), 3000);
     } catch (err) {
@@ -143,14 +145,14 @@ function BellPageContent() {
       {/* Request Buttons */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-10">
         <button
-          className="w-full px-3 py-3 bg-[#FFB84D] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#E09E44] transition"
-          onClick={() => handleRequest("Call Server")}
+          className="w-full px-3 py-3 bg-[#FFD700] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#E6C200] transition"
+          onClick={() => handleRequest("Call Server", "serverCallRequest", "Your server is on its way!")}
         >
           🛎️ Call Server
         </button>
         <button
-          className="w-full px-3 py-3 bg-[#4D9DE0] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#3A7BBF] transition"
-          onClick={() => handleRequest("Request Bill")}
+          className="w-full px-3 py-3 bg-[#F4A261] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#DC8A50] transition"
+          onClick={() => handleRequest("Request Bill", "billRequest", "Your bill is on its way!")}
         >
           💳 Request Bill
         </button>
@@ -192,7 +194,7 @@ function BellPageContent() {
       >
         <Image src="/assets/logo.png" alt="Bell" width={90} height={90} />
       </button>
-
+      
       {showConfirmation && (
         <div
           className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
@@ -201,7 +203,7 @@ function BellPageContent() {
                     transition-opacity duration-1000 ease-in-out"
           style={{ animation: "fadeOut 3s ease-in-out forwards" }}
         >
-          <p className="font-semibold">Request sent!</p>
+          <p className="font-semibold">{confirmationMessage}</p>
         </div>
       )}
     </div>
@@ -210,7 +212,7 @@ function BellPageContent() {
 
 export default function BellPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-screen text-yellow-500 text-xl">Loading...</div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <BellPageContent />
     </Suspense>
   );

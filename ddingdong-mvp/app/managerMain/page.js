@@ -99,26 +99,24 @@ export default function ManagerMainPage() {
   );
 
   const unsubscribeServerCalls = onSnapshot(
-    query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId)),
+    query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
     (snapshot) => {
       const updatedServerCalls = new Map();
       snapshot.forEach((doc) => {
-        updatedServerCalls.set(String(doc.data().table), doc.id); // Store doc ID for marking done
+        updatedServerCalls.set(String(doc.data().table), doc.id); // ✅ Correctly associate with table ID
       });
-  
-      setServerCallRequests(new Map(updatedServerCalls));
+      setServerCallRequests(updatedServerCalls);
     }
   );
-
+    
   const unsubscribeBillRequests = onSnapshot(
-    query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId)),
+    query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
     (snapshot) => {
       const updatedBillRequests = new Map();
       snapshot.forEach((doc) => {
-        updatedBillRequests.set(String(doc.data().table), doc.id); // Store doc ID for marking done
+        updatedBillRequests.set(String(doc.data().table), doc.id);
       });
-  
-      setBillRequests(new Map(updatedBillRequests));
+      setBillRequests(updatedBillRequests);
     }
   );
 
@@ -130,36 +128,29 @@ export default function ManagerMainPage() {
   };
 }, [restaurantId]);
 
-  const handleMarkDone = async (tableNumber, requestId) => {
-    try {
-      const requestRef = doc(db, "requests", requestId);
-      await updateDoc(requestRef, { resolved: true });
-      await updateDoc(requestRef, { customerNotification: "Your request is on its way!" });
+const handleMarkDone = async (tableNumber, requestId) => {
+  try {
+    const requestRef = doc(db, "requests", requestId);
+    await updateDoc(requestRef, { resolved: true });
+    await updateDoc(requestRef, { customerNotification: "Your request is on its way!" });
 
-      setTableRequests((prev) => {
-        const updated = { ...prev };
+    setTableRequests((prev) => {
+      const updated = { ...prev };
+
+      // Ensure the array exists before filtering
+      if (updated[tableNumber]) {
         updated[tableNumber] = updated[tableNumber].filter((req) => req.id !== requestId);
-        // Remove server call and bill request if present
-        setServerCallRequests((prev) => {
-          const updatedCalls = new Map(prev);
-          updatedCalls.delete(tableNumber);
-          return updatedCalls;
-        });
+      }
 
-        setBillRequests((prev) => {
-          const updatedBills = new Map(prev);
-          updatedBills.delete(tableNumber);
-          return updatedBills;
-        });
-        return updated;
-      });
-    } catch (err) {
-      console.error("❌ Error marking request as done:", err);
-    }
-  };
+      return updated;
+    });
+  } catch (err) {
+    console.error("❌ Error marking request as done:", err);
+  }
+};
 
   const openTablePopup = (tableNumber) => {
-    setSelectedTable(tableNumber);
+    setSelectedTable(String(tableNumber)); // ✅ Ensure it matches Firestore keys
     setShowPopup(true);
   };
   
@@ -362,7 +353,7 @@ export default function ManagerMainPage() {
         ))}
 
         {/* Show Server Call Request */}
-        {serverCallRequests.has(selectedTable) && (
+        {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable) && (
           <li className="flex justify-between items-center bg-gray-200 p-2 mb-2 rounded-lg">
             <p className="text-gray-700">🛎️ Server Call</p>
             <button
@@ -373,7 +364,7 @@ export default function ManagerMainPage() {
                   await updateDoc(doc(db, "serverCallRequest", docId), { resolved: true });
                   setServerCallRequests((prev) => {
                     const updated = new Map(prev);
-                    updated.delete(selectedTable);
+                    updated.delete(selectedTable); // ✅ Correctly remove for the right table
                     return updated;
                   });
                 }
@@ -385,7 +376,7 @@ export default function ManagerMainPage() {
         )}
 
         {/* Show Bill Request */}
-        {billRequests.has(selectedTable) && (
+        {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (
           <li className="flex justify-between items-center bg-gray-200 p-2 mb-2 rounded-lg">
             <p className="text-gray-700">💳 Bill Requested</p>
             <button
@@ -396,7 +387,7 @@ export default function ManagerMainPage() {
                   await updateDoc(doc(db, "billRequest", docId), { resolved: true });
                   setBillRequests((prev) => {
                     const updated = new Map(prev);
-                    updated.delete(selectedTable);
+                    updated.delete(selectedTable); // ✅ Remove correctly for only this table
                     return updated;
                   });
                 }

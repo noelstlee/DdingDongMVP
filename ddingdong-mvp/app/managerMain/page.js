@@ -6,9 +6,6 @@ import { db } from "@/firebase";
 import { collection, query, where, onSnapshot, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { Poppins } from "next/font/google";
 
-import { signOut } from "firebase/auth";
-import { auth } from "@/firebase";
-
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
@@ -27,9 +24,9 @@ export default function ManagerMainPage() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
-  const [showSignOutPopup, setShowSignOutPopup] = useState(false); // Sign Out Confirmation Popup
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const fetchManagerData = async () => {
       try {
         const managerEmail = localStorage.getItem("managerEmail")?.trim().toLowerCase();
@@ -73,62 +70,71 @@ export default function ManagerMainPage() {
   useEffect(() => {
     if (!restaurantId) return;
     console.log(`📡 Fetching tables for restaurant: ${restaurantId}`);
+  
     const tableCollectionRef = collection(db, "tables", restaurantId, "table_items");
     const unsubscribeTables = onSnapshot(tableCollectionRef, (snapshot) => {
-    const tableList = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    console.log("✅ Tables fetched:", tableList);
-    tableList.sort((a, b) => parseInt(a.tableNumber) - parseInt(b.tableNumber));
-    setTables(tableList);
-  });
-
-  console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
-  const unsubscribeRequests = onSnapshot(
-    query(collection(db, "requests"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
-    (snapshot) => {
-      const updatedRequests = {};
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const tableNumber = String(data.table);
-        if (!updatedRequests[tableNumber]) updatedRequests[tableNumber] = [];
-        updatedRequests[tableNumber].push({ id: doc.id, ...data });
-      });
-      console.log("✅ Requests fetched:", updatedRequests);
-      setTableRequests(updatedRequests);
-    }
-  );
-
-  const unsubscribeServerCalls = onSnapshot(
-    query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
-    (snapshot) => {
-      const updatedServerCalls = new Map();
-      snapshot.forEach((doc) => {
-        updatedServerCalls.set(String(doc.data().table), doc.id); // ✅ Correctly associate with table ID
-      });
-      setServerCallRequests(updatedServerCalls);
-    }
-  );
+      const tableList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      console.log("✅ Tables fetched:", tableList);
+      tableList.sort((a, b) => parseInt(a.tableNumber) - parseInt(b.tableNumber));
+      setTables(tableList);
+    });
+  
+    console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
+    const unsubscribeRequests = onSnapshot(
+      query(collection(db, "requests"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
+      (snapshot) => {
+        const updatedRequests = {};
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const tableNumber = String(data.table);
+          if (!updatedRequests[tableNumber]) updatedRequests[tableNumber] = [];
+          updatedRequests[tableNumber].push({ id: doc.id, ...data });
+        });
+        console.log("✅ Requests fetched:", updatedRequests);
+        setTableRequests(updatedRequests);
+      }
+    );
+  
+    const unsubscribeServerCalls = onSnapshot(
+      query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
+      (snapshot) => {
+        const updatedServerCalls = new Map();
     
-  const unsubscribeBillRequests = onSnapshot(
-    query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
-    (snapshot) => {
-      const updatedBillRequests = new Map();
-      snapshot.forEach((doc) => {
-        updatedBillRequests.set(String(doc.data().table), doc.id);
-      });
-      setBillRequests(updatedBillRequests);
-    }
-  );
-
-  return () => {
-    unsubscribeTables();
-    unsubscribeRequests();
-    unsubscribeServerCalls();
-    unsubscribeBillRequests();
-  };
-}, [restaurantId]);
+        snapshot.forEach((doc) => {
+          const tableNumber = String(doc.data().table);
+          if (!updatedServerCalls.has(tableNumber)) {
+            updatedServerCalls.set(tableNumber, [doc.id]); // ✅ Store array of doc IDs
+          } else {
+            updatedServerCalls.set(tableNumber, [...updatedServerCalls.get(tableNumber), doc.id]); // ✅ Append new doc ID
+          }
+        });
+  
+        console.log("✅ Server Calls Updated:", updatedServerCalls); // ✅ Debugging
+        setServerCallRequests(updatedServerCalls);
+      }
+    );
+  
+    const unsubscribeBillRequests = onSnapshot(
+      query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
+      (snapshot) => {
+        const updatedBillRequests = new Map();
+        snapshot.forEach((doc) => {
+          updatedBillRequests.set(String(doc.data().table), doc.id);
+        });
+        setBillRequests(updatedBillRequests);
+      }
+    );
+  
+    return () => {
+      unsubscribeTables();
+      unsubscribeRequests();
+      unsubscribeServerCalls();
+      unsubscribeBillRequests();
+    };
+  }, [restaurantId]);
 
 const handleMarkDone = async (tableNumber, requestId) => {
   try {
@@ -186,16 +192,6 @@ const handleMarkDone = async (tableNumber, requestId) => {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth); // ✅ Pass the auth instance
-      localStorage.removeItem("managerEmail"); // ✅ Clear manager email from localStorage
-      router.push("/auth/manager"); // ✅ Redirect to the login page
-    } catch (err) {
-      console.error("❌ Error signing out:", err);
-    }
-  };
-
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-gray-900 text-yellow-400">Loading...</div>;
@@ -219,28 +215,24 @@ const handleMarkDone = async (tableNumber, requestId) => {
   return (
     <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
       {/* Header */}
-      <div className="w-full flex items-center justify-between mb-6 relative">
-      {/* Centered Manager Dashboard */}
-      <h1 className="text-3xl font-bold absolute left-1/2 transform -translate-x-1/2">
+      <div className="w-full flex items-center justify-between px-4 sm:px-6 py-4 relative">
+        
+      {/* Manager Dashboard (Left on Phones, Center on Larger Screens) */}
+      <h1 className="absolute top-4 left-4 sm:left-1/2 sm:top-auto sm:transform sm:-translate-x-1/2 text-left sm:text-center text-xl sm:text-2xl md:text-3xl font-bold">
         Manager Dashboard
       </h1>
 
-      {/* Right-aligned Buttons */}
-      <div className="ml-auto flex">
-        <button
-          className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition mr-4"
-          onClick={() => router.push("/managerMain/settings")}
-        >
-          ⚙️ Settings
-        </button>
-        <button
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-            onClick={() => setShowSignOutPopup(true)} // Open confirmation popup
+        {/* Right-aligned Buttons */}
+        <div className="ml-auto flex space-x-2 sm:space-x-4">
+          <button
+            className="px-3 sm:px-4 md:px-6 py-2 text-sm sm:text-base md:text-lg bg-gray-700 text-white rounded-lg 
+                      hover:bg-gray-600 transition"
+            onClick={() => router.push("/managerMain/settings")}
           >
-            Sign Out
+            ⚙️ Settings
           </button>
+        </div>
       </div>
-    </div>
 
       {/* Manager Info */}
       {managerData && (
@@ -251,69 +243,55 @@ const handleMarkDone = async (tableNumber, requestId) => {
       )}
 
 
-      {/* Sign Out Confirmation Popup */}
-      {showSignOutPopup && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
-          <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg w-96 text-center">
-            <h2 className="text-lg font-medium mb-4">Are you sure you want to sign out?</h2>
-            <div className="flex justify-center space-x-4">
-              <button
-                className="px-6 py-3 bg-red-500 text-white text-lg font-medium rounded-lg shadow-[0_4px_0_#b30000] 
-                          transition active:translate-y-1 active:shadow-inner"
-                onClick={handleSignOut}
-              >
-                Yes, Sign Out
-              </button>
-              <button
-                className="px-6 py-3 bg-gray-500 text-white text-lg font-medium rounded-lg shadow-md transition 
-                          active:translate-y-1 active:shadow-inner"
-                onClick={() => setShowSignOutPopup(false)} // Close popup
-              >
-                No, Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Tables */}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
       {tables.map((table) => {
-        const tableNumber = String(table.tableNumber);
-        const isServerCallActive = serverCallRequests.has(tableNumber);
-        const isBillRequestActive = billRequests.has(tableNumber);
-        const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+      const tableNumber = String(table.tableNumber);
 
-          // Determine icon order dynamically
-        const icons = [];
-        if (isServerCallActive) icons.push("🛎️");
-        if (isBillRequestActive) icons.push("💳");
+      const isServerCallActive = serverCallRequests.has(tableNumber);
+      const isBillRequestActive = billRequests.has(tableNumber);
+      const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+      const icons = [];
+      if (isServerCallActive) icons.push("🛎️");
+      if (isBillRequestActive) icons.push("💳");
+      // Count unresolved server call requests for this table
+      const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
+      ? serverCallRequests.get(tableNumber).length
+      : 0; // Get count, default 0      
 
-        return (
-          <button
-            key={tableNumber}
-            className={`relative w-40 h-40 flex items-center justify-center text-xl font-bold rounded-lg transition-all 
-              ${icons.length > 0 ? "bg-yellow-500" : unresolvedRequests.length > 0 ? "bg-yellow-400" : "bg-gray-700"} 
-              text-black shadow-lg`}
-              onClick={() => openTablePopup(tableNumber)}
-          >
-            Table {tableNumber}
-            {/* Dynamically position icons */}
-            <div className="absolute top-2 left-2 flex space-x-2">
-              {icons.map((icon, index) => (
-                <span key={index} className="text-2xl">{icon}</span>
-              ))}
-            </div>
+      let tableColorClass = "bg-gray-700"; // Default color
 
-            {/* Show red notification badge if there are unresolved requests */}
-            {unresolvedRequests.length > 0 && (
-              <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-                {unresolvedRequests.length}
-              </span>
-            )}
-          </button>
-        );
-      })}
+      if (unresolvedServerCallsCount >= 2) {
+        tableColorClass = "bg-red-600"; // 🔴 Turn red if 2 unresolved server calls exist
+      } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
+        tableColorClass = "bg-yellow-500"; // 🟡 Yellow for other active requests
+      } else if (unresolvedRequests.length > 0) {
+        tableColorClass = "bg-yellow-400"; // Light yellow if general requests exist
+      }
+
+      return (
+        <button
+          key={tableNumber}
+          className={`relative w-40 h-40 flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
+          onClick={() => openTablePopup(tableNumber)}
+        >
+          Table {tableNumber}
+          {/* Icons for requests */}
+          <div className="absolute top-2 left-2 flex space-x-2">
+            {icons.map((icon, index) => (
+              <span key={index} className="text-2xl">{icon}</span>
+            ))}
+          </div>
+    
+          {/* Show red notification badge if there are unresolved requests */}
+          {unresolvedRequests.length > 0 && (
+            <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
+              {unresolvedRequests.length}
+            </span>
+          )}
+        </button>
+      );
+    })}
     </div>
 
             {/* Active Requests */}
@@ -395,27 +373,38 @@ const handleMarkDone = async (tableNumber, requestId) => {
               ))}
 
               {/* Show Server Call Request */}
-              {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable) && (
-                <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
-                  <p className="text-lg font-medium text-gray-700">🛎️ Server Call</p>
-                  <button
-                    className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                    onClick={async () => {
-                      const docId = serverCallRequests.get(selectedTable);
-                      if (docId) {
-                        await updateDoc(doc(db, "serverCallRequest", docId), { resolved: true });
-                        setServerCallRequests((prev) => {
+              {serverCallRequests.has(selectedTable) && serverCallRequests.get(selectedTable).length > 0 && (
+              <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
+                <p className="text-lg font-medium text-gray-700">🛎️ Server Call ({serverCallRequests.get(selectedTable).length})</p>
+                <button
+                  className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                  onClick={async () => {
+                    try {
+                      const docIds = serverCallRequests.get(selectedTable);
+                      if (docIds && docIds.length > 0) {
+                        // Mark all server calls as resolved
+                        await Promise.all(
+                          docIds.map(docId => updateDoc(doc(db, "serverCallRequest", docId), { resolved: true }))
+                        );
+
+                        // Remove from local state
+                        setServerCallRequests(prev => {
                           const updated = new Map(prev);
                           updated.delete(selectedTable);
                           return updated;
                         });
+
+                        console.log(`✅ Resolved all server call requests for Table ${selectedTable}`);
                       }
-                    }}
-                  >
-                    Mark Done
-                  </button>
-                </li>
-              )}
+                    } catch (err) {
+                      console.error(`❌ Error resolving server call requests for Table ${selectedTable}:`, err);
+                    }
+                  }}
+                >
+                  Mark All Done
+                </button>
+              </li>
+            )}
 
               {/* Show Bill Request */}
               {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (

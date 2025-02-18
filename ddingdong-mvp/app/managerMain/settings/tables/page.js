@@ -12,7 +12,7 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 export default function CustomizeTablesPage() {
   const router = useRouter();
   const [restaurantId, setRestaurantId] = useState("");
-  const [tableCount, setTableCount] = useState(0);
+  const [tableCount, setTableCount] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -84,9 +84,6 @@ export default function CustomizeTablesPage() {
         ← Back
       </button>
 
-      {/* Header (Centered) */}
-      <h1 className="text-3xl font-semibold text-center mb-6">Customize Tables</h1>
-
       {/* Error Message */}
       {error && <p className="text-red-500 text-lg mb-4">{error}</p>}
 
@@ -95,17 +92,6 @@ export default function CustomizeTablesPage() {
 
       {!loading && !error && (
         <div className="w-full max-w-lg space-y-6 text-center">
-          
-          {/* Restaurant ID Display (Non-Editable) */}
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4">Restaurant ID</h2>
-            <input
-              type="text"
-              className="w-full p-3 bg-gray-700 text-white rounded-lg text-lg cursor-not-allowed"
-              value={restaurantId}
-              readOnly
-            />
-          </div>
 
           {/* Table Count Input */}
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -115,7 +101,10 @@ export default function CustomizeTablesPage() {
               className="w-full p-3 bg-gray-700 text-white rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
               placeholder="Enter number of tables"
               value={tableCount}
-              onChange={(e) => setTableCount(Number(e.target.value))}
+              onChange={(e) => {
+                const value = e.target.value;
+                setTableCount(value === "" ? "" : Number(value)); // Allow empty input
+              }}
               min={0}
             />
           </div>

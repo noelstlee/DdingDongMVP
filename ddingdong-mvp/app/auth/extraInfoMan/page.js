@@ -14,7 +14,6 @@ export default function ExtraInfoManPage() {
   const [restaurantCode, setRestaurantCode] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [birthday, setBirthday] = useState("");
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -60,7 +59,6 @@ export default function ExtraInfoManPage() {
           email: user.email,
           firstName,
           lastName,
-          birthday,
           restaurantId: restaurantCode,
         },
         { merge: true }
@@ -125,15 +123,6 @@ export default function ExtraInfoManPage() {
             placeholder="Last Name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
-                       focus:ring-2 focus:ring-yellow-500 transition-all"
-          />
-
-          {/* Birthday Input */}
-          <input
-            type="date"
-            value={birthday}
-            onChange={(e) => setBirthday(e.target.value)}
             className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none 
                        focus:ring-2 focus:ring-yellow-500 transition-all"
           />

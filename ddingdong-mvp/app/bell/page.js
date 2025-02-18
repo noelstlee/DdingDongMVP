@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect } from "react";
 import { Poppins } from "next/font/google";
 import Image from "next/image";
 import { db } from "@/firebase";
-import { doc, getDoc, collection, addDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, onSnapshot, query, where, getDocs } from "firebase/firestore";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
@@ -79,6 +79,24 @@ function BellPageContent() {
     }
 
     const formattedTableId = tableId.replace("Table ", "").trim();
+
+      // Fetch unresolved "Call Server" requests
+    if (customRequest === "Call Server") {
+      const q = query(
+        collection(db, "serverCallRequest"),
+        where("restaurantId", "==", restaurantId),
+        where("table", "==", formattedTableId),
+        where("resolved", "==", false)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      // Prevent third unresolved request
+      if (querySnapshot.size >= 2) {
+        alert("You already have two unresolved 'Call Server' requests. Please wait.");
+        return;
+      }
+    }
+
 
     const requestedItems = customRequest
       ? [{ item: customRequest, quantity: 1 }]

@@ -32,7 +32,7 @@ export default function ExtraInfoManPage() {
   }, [router]);
 
   const handleContinue = async () => {
-    if (!firstName.trim() || !lastName.trim() || !birthday.trim() || !restaurantCode.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !restaurantCode.trim()) {
       setError("All fields are required.");
       return;
     }

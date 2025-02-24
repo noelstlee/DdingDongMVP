@@ -9,6 +9,13 @@ import { Poppins } from "next/font/google";
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
+const getTableSize = (tableCount) => {
+  if (tableCount <= 10) return 'w-32 h-32';
+  if (tableCount <= 15) return 'w-28 h-28';
+  if (tableCount <= 20) return 'w-24 h-24';
+  return 'w-20 h-20'; // For more than 20 tables
+};
+
 export default function ManagerMainPage() {
   const router = useRouter();
   const [managerData, setManagerData] = useState(null);
@@ -244,55 +251,53 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
 
       {/* Tables */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
-      {tables.map((table) => {
-      const tableNumber = String(table.tableNumber);
+      <div className="relative w-full max-w-4xl h-[600px] bg-gray-800 rounded-lg mb-8">
+        {tables.map((table) => {
+          const tableNumber = String(table.tableNumber);
+          const isServerCallActive = serverCallRequests.has(tableNumber);
+          const isBillRequestActive = billRequests.has(tableNumber);
+          const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+          const icons = [];
+          if (isServerCallActive) icons.push("🛎️");
+          if (isBillRequestActive) icons.push("💳");
+          const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
+            ? serverCallRequests.get(tableNumber).length
+            : 0;
 
-      const isServerCallActive = serverCallRequests.has(tableNumber);
-      const isBillRequestActive = billRequests.has(tableNumber);
-      const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
-      const icons = [];
-      if (isServerCallActive) icons.push("🛎️");
-      if (isBillRequestActive) icons.push("💳");
-      // Count unresolved server call requests for this table
-      const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
-      ? serverCallRequests.get(tableNumber).length
-      : 0; // Get count, default 0      
+          let tableColorClass = "bg-gray-700";
+          if (unresolvedServerCallsCount >= 2) {
+            tableColorClass = "bg-red-600";
+          } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
+            tableColorClass = "bg-yellow-500";
+          } else if (unresolvedRequests.length > 0) {
+            tableColorClass = "bg-yellow-400";
+          }
 
-      let tableColorClass = "bg-gray-700"; // Default color
-
-      if (unresolvedServerCallsCount >= 2) {
-        tableColorClass = "bg-red-600"; // 🔴 Turn red if 2 unresolved server calls exist
-      } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
-        tableColorClass = "bg-yellow-500"; // 🟡 Yellow for other active requests
-      } else if (unresolvedRequests.length > 0) {
-        tableColorClass = "bg-yellow-400"; // Light yellow if general requests exist
-      }
-
-      return (
-        <button
-          key={tableNumber}
-          className={`relative w-40 h-40 flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
-          onClick={() => openTablePopup(tableNumber)}
-        >
-          Table {tableNumber}
-          {/* Icons for requests */}
-          <div className="absolute top-2 left-2 flex space-x-2">
-            {icons.map((icon, index) => (
-              <span key={index} className="text-2xl">{icon}</span>
-            ))}
-          </div>
-    
-          {/* Show red notification badge if there are unresolved requests */}
-          {unresolvedRequests.length > 0 && (
-            <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-              {unresolvedRequests.length}
-            </span>
-          )}
-        </button>
-      );
-    })}
-    </div>
+          return (
+            <button
+              key={tableNumber}
+              className={`absolute ${getTableSize(tables.length)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
+              onClick={() => openTablePopup(tableNumber)}
+              style={{
+                left: `${table.positionX}px`,
+                top: `${table.positionY}px`,
+              }}
+            >
+              {tableNumber}
+              <div className="absolute top-2 left-2 flex space-x-2">
+                {icons.map((icon, index) => (
+                  <span key={index} className="text-2xl">{icon}</span>
+                ))}
+              </div>
+              {unresolvedRequests.length > 0 && (
+                <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
+                  {unresolvedRequests.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
             {/* Active Requests */}
             <div className="w-full max-w-4xl bg-gray-800 p-5 rounded-lg shadow-lg">

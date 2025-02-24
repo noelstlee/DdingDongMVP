@@ -10,10 +10,53 @@ import { Poppins } from "next/font/google";
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
 const getTableSize = (tableCount) => {
-  if (tableCount <= 10) return 'w-32 h-32';
-  if (tableCount <= 15) return 'w-28 h-28';
-  if (tableCount <= 20) return 'w-24 h-24';
-  return 'w-20 h-20'; // For more than 20 tables
+  if (tableCount <= 10) return 'w-24 h-24';
+  if (tableCount <= 20) return 'w-20 h-20';
+  if (tableCount <= 30) return 'w-16 h-16';
+  if (tableCount <= 40) return 'w-14 h-14';
+  return 'w-12 h-12'; // For more than 40 tables
+};
+
+const calculateCanvasBoundary = (tables) => {
+  if (!tables || tables.length === 0) return { width: 1600, height: 1000 };
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  // Find the boundaries of all tables, accounting for table size
+  const tableCount = tables.length;
+  const gridSize = tableCount <= 10 ? 48 : tableCount <= 20 ? 40 : tableCount <= 30 ? 32 : 24;
+  
+  tables.forEach(({ positionX, positionY }) => {
+    // Account for the table size and centering transform
+    const halfTableSize = gridSize / 2;
+    minX = Math.min(minX, positionX - halfTableSize);
+    minY = Math.min(minY, positionY - halfTableSize);
+    maxX = Math.max(maxX, positionX + halfTableSize);
+    maxY = Math.max(maxY, positionY + halfTableSize);
+  });
+
+  // Add padding to all sides
+  const paddingGrids = 2;
+  const padding = gridSize * paddingGrids;
+  
+  // Calculate final dimensions with padding on all sides
+  const width = Math.max(maxX - minX + (padding * 2), 800);
+  const height = Math.max(maxY - minY + (padding * 2), 600);
+
+  // Adjust table positions relative to the padded canvas
+  const startX = minX - padding;
+  const startY = minY - padding;
+
+  return {
+    width,
+    height,
+    startX,
+    startY,
+    gridSize
+  };
 };
 
 export default function ManagerMainPage() {
@@ -31,6 +74,7 @@ export default function ManagerMainPage() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
+  const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -87,6 +131,10 @@ export default function ManagerMainPage() {
       console.log("✅ Tables fetched:", tableList);
       tableList.sort((a, b) => parseInt(a.tableNumber) - parseInt(b.tableNumber));
       setTables(tableList);
+
+      // Calculate and set canvas size
+      const { width, height } = calculateCanvasBoundary(tableList);
+      setCanvasSize({ width, height });
     });
   
     console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
@@ -251,52 +299,62 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
 
       {/* Tables */}
-      <div className="relative w-full max-w-4xl h-[600px] bg-gray-800 rounded-lg mb-8">
-        {tables.map((table) => {
-          const tableNumber = String(table.tableNumber);
-          const isServerCallActive = serverCallRequests.has(tableNumber);
-          const isBillRequestActive = billRequests.has(tableNumber);
-          const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
-          const icons = [];
-          if (isServerCallActive) icons.push("🛎️");
-          if (isBillRequestActive) icons.push("💳");
-          const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
-            ? serverCallRequests.get(tableNumber).length
-            : 0;
+      <div className="w-full flex justify-center items-center my-8">
+        <div 
+          className="relative bg-gray-800 rounded-lg"
+          style={{ 
+            width: `${canvasSize.width}px`, 
+            height: `${canvasSize.height}px`,
+            margin: '0 auto' // Center horizontally
+          }}
+        >
+          {tables.map((table) => {
+            const tableNumber = String(table.tableNumber);
+            const isServerCallActive = serverCallRequests.has(tableNumber);
+            const isBillRequestActive = billRequests.has(tableNumber);
+            const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+            const icons = [];
+            if (isServerCallActive) icons.push("🛎️");
+            if (isBillRequestActive) icons.push("💳");
+            const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
+              ? serverCallRequests.get(tableNumber).length
+              : 0;
 
-          let tableColorClass = "bg-gray-700";
-          if (unresolvedServerCallsCount >= 2) {
-            tableColorClass = "bg-red-600";
-          } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
-            tableColorClass = "bg-yellow-500";
-          } else if (unresolvedRequests.length > 0) {
-            tableColorClass = "bg-yellow-400";
-          }
+            let tableColorClass = "bg-gray-700";
+            if (unresolvedServerCallsCount >= 2) {
+              tableColorClass = "bg-red-600";
+            } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
+              tableColorClass = "bg-yellow-500";
+            } else if (unresolvedRequests.length > 0) {
+              tableColorClass = "bg-yellow-400";
+            }
 
-          return (
-            <button
-              key={tableNumber}
-              className={`absolute ${getTableSize(tables.length)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
-              onClick={() => openTablePopup(tableNumber)}
-              style={{
-                left: `${table.positionX}px`,
-                top: `${table.positionY}px`,
-              }}
-            >
-              {tableNumber}
-              <div className="absolute top-2 left-2 flex space-x-2">
-                {icons.map((icon, index) => (
-                  <span key={index} className="text-2xl">{icon}</span>
-                ))}
-              </div>
-              {unresolvedRequests.length > 0 && (
-                <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-                  {unresolvedRequests.length}
-                </span>
-              )}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={tableNumber}
+                className={`absolute ${getTableSize(tables.length)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
+                onClick={() => openTablePopup(tableNumber)}
+                style={{
+                  left: `${table.positionX}px`,
+                  top: `${table.positionY}px`,
+                  transform: 'translate(-50%, -50%)' // Keep the centering transform
+                }}
+              >
+                {tableNumber}
+                <div className="absolute top-2 left-2 flex space-x-2">
+                  {icons.map((icon, index) => (
+                    <span key={index} className="text-2xl">{icon}</span>
+                  ))}
+                </div>
+                {unresolvedRequests.length > 0 && (
+                  <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
+                    {unresolvedRequests.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
             {/* Active Requests */}

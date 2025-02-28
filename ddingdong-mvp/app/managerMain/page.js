@@ -9,52 +9,72 @@ import { Poppins } from "next/font/google";
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
-const getTableSize = (tableCount) => {
+const getTableSize = (tableCount, screenWidth) => {
+  // For smaller screens (tablets and phones)
+  if (screenWidth < 768) {
+    if (tableCount <= 10) return 'w-16 h-16';
+    if (tableCount <= 20) return 'w-14 h-14';
+    if (tableCount <= 30) return 'w-12 h-12';
+    return 'w-10 h-10';
+  }
+  // For medium screens
+  if (screenWidth < 1024) {
+    if (tableCount <= 10) return 'w-20 h-20';
+    if (tableCount <= 20) return 'w-16 h-16';
+    if (tableCount <= 30) return 'w-14 h-14';
+    return 'w-12 h-12';
+  }
+  // For larger screens (original sizes)
   if (tableCount <= 10) return 'w-24 h-24';
   if (tableCount <= 20) return 'w-20 h-20';
   if (tableCount <= 30) return 'w-16 h-16';
   if (tableCount <= 40) return 'w-14 h-14';
-  return 'w-12 h-12'; // For more than 40 tables
+  return 'w-12 h-12';
 };
 
 const calculateCanvasBoundary = (tables) => {
   if (!tables || tables.length === 0) return { width: 1600, height: 1000 };
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  // Find the boundaries of all tables, accounting for table size
+  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
   const tableCount = tables.length;
   const gridSize = tableCount <= 10 ? 48 : tableCount <= 20 ? 40 : tableCount <= 30 ? 32 : 24;
-  
-  tables.forEach(({ positionX, positionY }) => {
-    // Account for the table size and centering transform
-    const halfTableSize = gridSize / 2;
-    minX = Math.min(minX, positionX - halfTableSize);
-    minY = Math.min(minY, positionY - halfTableSize);
-    maxX = Math.max(maxX, positionX + halfTableSize);
-    maxY = Math.max(maxY, positionY + halfTableSize);
+  const padding = gridSize * 2;
+
+  // Find actual boundaries and scale appropriately
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  tables.forEach((table) => {
+    minX = Math.min(minX, table.positionX);
+    minY = Math.min(minY, table.positionY);
+    maxX = Math.max(maxX, table.positionX);
+    maxY = Math.max(maxY, table.positionY);
   });
 
-  // Add padding to all sides
-  const paddingGrids = 2;
-  const padding = gridSize * paddingGrids;
+  // If no valid positions yet, use default size
+  if (minX === Infinity) {
+    if (screenWidth < 1024) { // Smaller screens
+      return {
+        width: Math.floor((screenWidth * 0.9) / gridSize) * gridSize,
+        height: Math.floor((window.innerHeight * 0.7) / gridSize) * gridSize,
+        gridSize
+      };
+    }
+    return { // Larger screens
+      width: Math.floor((screenWidth * 0.8) / gridSize) * gridSize,
+      height: Math.floor((window.innerHeight * 0.8) / gridSize) * gridSize,
+      gridSize
+    };
+  }
+
+  // Calculate required size with padding
+  const requiredWidth = (maxX - minX) + (padding * 4);
+  const requiredHeight = (maxY - minY) + (padding * 4);
   
-  // Calculate final dimensions with padding on all sides
-  const width = Math.max(maxX - minX + (padding * 2), 800);
-  const height = Math.max(maxY - minY + (padding * 2), 600);
-
-  // Adjust table positions relative to the padded canvas
-  const startX = minX - padding;
-  const startY = minY - padding;
-
+  // Scale based on screen size
+  const scale = screenWidth < 1024 ? 0.9 : 0.8;
+  
   return {
-    width,
-    height,
-    startX,
-    startY,
+    width: Math.floor(requiredWidth * scale / gridSize) * gridSize,
+    height: Math.floor(requiredHeight * scale / gridSize) * gridSize,
     gridSize
   };
 };
@@ -75,6 +95,7 @@ export default function ManagerMainPage() {
   const [showPopup, setShowPopup] = useState(false);
 
   const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 });
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -191,6 +212,19 @@ export default function ManagerMainPage() {
     };
   }, [restaurantId]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+      const { width, height } = calculateCanvasBoundary(tables);
+      setCanvasSize({ width, height });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [tables]);
+
 const handleMarkDone = async (tableNumber, requestId) => {
   try {
     const requestRef = doc(db, "requests", requestId);
@@ -268,7 +302,7 @@ const handleMarkDone = async (tableNumber, requestId) => {
   }
 
   return (
-    <div className={`flex flex-col items-center min-h-screen p-5 bg-gray-900 text-white ${poppins.className}`}>
+    <div className={`flex flex-col min-h-screen bg-gray-900 text-white p-4 ${poppins.className}`}>
       {/* Header */}
       <div className="w-full flex items-center justify-between px-4 sm:px-6 py-4 relative">
         
@@ -300,102 +334,125 @@ const handleMarkDone = async (tableNumber, requestId) => {
 
       {/* Tables */}
       <div className="w-full flex justify-center items-center my-8">
-        <div 
-          className="relative bg-gray-800 rounded-lg"
-          style={{ 
-            width: `${canvasSize.width}px`, 
-            height: `${canvasSize.height}px`,
-            margin: '0 auto' // Center horizontally
-          }}
-        >
-          {tables.map((table) => {
-            const tableNumber = String(table.tableNumber);
-            const isServerCallActive = serverCallRequests.has(tableNumber);
-            const isBillRequestActive = billRequests.has(tableNumber);
-            const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
-            const icons = [];
-            if (isServerCallActive) icons.push("🛎️");
-            if (isBillRequestActive) icons.push("💳");
-            const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
-              ? serverCallRequests.get(tableNumber).length
-              : 0;
+        <div className="overflow-auto" style={{ 
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <div 
+            className="relative bg-gray-800 rounded-lg"
+            style={{ 
+              width: `${canvasSize.width}px`, 
+              height: `${canvasSize.height}px`,
+              margin: '0 auto'
+            }}
+          >
+            {tables.map((table) => {
+              const tableNumber = String(table.tableNumber);
+              const isServerCallActive = serverCallRequests.has(tableNumber);
+              const isBillRequestActive = billRequests.has(tableNumber);
+              const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+              const icons = [];
+              if (isServerCallActive) icons.push("🛎️");
+              if (isBillRequestActive) icons.push("💳");
+              const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
+                ? serverCallRequests.get(tableNumber).length
+                : 0;
 
-            let tableColorClass = "bg-gray-700";
-            if (unresolvedServerCallsCount >= 2) {
-              tableColorClass = "bg-red-600";
-            } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
-              tableColorClass = "bg-yellow-500";
-            } else if (unresolvedRequests.length > 0) {
-              tableColorClass = "bg-yellow-400";
-            }
+              let tableColorClass = "bg-gray-700";
+              if (unresolvedServerCallsCount >= 2) {
+                tableColorClass = "bg-red-600";
+              } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
+                tableColorClass = "bg-yellow-500";
+              } else if (unresolvedRequests.length > 0) {
+                tableColorClass = "bg-yellow-400";
+              }
 
-            return (
-              <button
-                key={tableNumber}
-                className={`absolute ${getTableSize(tables.length)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
-                onClick={() => openTablePopup(tableNumber)}
-                style={{
-                  left: `${table.positionX}px`,
-                  top: `${table.positionY}px`,
-                  transform: 'translate(-50%, -50%)' // Keep the centering transform
-                }}
-              >
-                {tableNumber}
-                <div className="absolute top-2 left-2 flex space-x-2">
-                  {icons.map((icon, index) => (
-                    <span key={index} className="text-2xl">{icon}</span>
-                  ))}
-                </div>
-                {unresolvedRequests.length > 0 && (
-                  <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-                    {unresolvedRequests.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+              // For mobile, calculate position in 3-column layout
+              let positionX = table.positionX;
+              let positionY = table.positionY;
+              
+              if (screenWidth < 768) {
+                const index = parseInt(tableNumber) - 1;
+                const col = index % 3;
+                const row = Math.floor(index / 3);
+                const gridSize = canvasSize.gridSize;
+                positionX = (gridSize * 2) + (col * gridSize * 3); // 3x spacing between columns
+                positionY = (gridSize * 2) + (row * gridSize * 3); // 3x spacing between rows
+              }
+
+              return (
+                <button
+                  key={tableNumber}
+                  className={`absolute ${getTableSize(tables.length, screenWidth)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
+                  onClick={() => openTablePopup(tableNumber)}
+                  style={{
+                    left: `${positionX}px`,
+                    top: `${positionY}px`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  {tableNumber}
+                  <div className="absolute top-2 left-2 flex space-x-2">
+                    {icons.map((icon, index) => (
+                      <span key={index} className="text-2xl">{icon}</span>
+                    ))}
+                  </div>
+                  {unresolvedRequests.length > 0 && (
+                    <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded-full">
+                      {unresolvedRequests.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-            {/* Active Requests */}
-            <div className="w-full max-w-4xl bg-gray-800 p-5 rounded-lg shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Active Requests</h2>
-          {/* Mark All Done Button */}
-          <button
-            className="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition"
-            onClick={handleMarkAllDone}
-          >
-            Mark All Done
-          </button>
-        </div>
+      {/* Active Requests */}
+      <div className="w-full flex justify-center items-center">
+        <div className="w-full max-w-4xl bg-gray-800 p-5 rounded-lg shadow-lg mx-auto my-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Active Requests</h2>
+            {/* Mark All Done Button */}
+            <button
+              className="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition"
+              onClick={handleMarkAllDone}
+            >
+              Mark All Done
+            </button>
+          </div>
 
-        {Object.keys(tableRequests).length === 0 ? (
-          <p className="text-gray-400 text-center">No active requests.</p>
-        ) : (
-          Object.entries(tableRequests).map(([tableNumber, requests]) =>
-            requests.map((req) =>
-              !req.resolved && req.requestType !== "special" && (
-                <div key={req.id} className="flex justify-between items-center bg-gray-700 p-3 mb-3 rounded-lg">
-                  <div>
-                    <p className="text-xl font-semibold">Table {tableNumber}</p>
-                    {req.items && req.items.map((item, index) => (
-                      <p key={index} className="text-gray-300 text-lg">
-                        {item.quantity} x {item.item}
-                      </p>
-                    ))}
+          {Object.keys(tableRequests).length === 0 ? (
+            <p className="text-gray-400 text-center">No active requests.</p>
+          ) : (
+            Object.entries(tableRequests).map(([tableNumber, requests]) =>
+              requests.map((req) =>
+                !req.resolved && req.requestType !== "special" && (
+                  <div key={req.id} className="flex justify-between items-center bg-gray-700 p-3 mb-3 rounded-lg">
+                    <div>
+                      <p className="text-xl font-semibold">Table {tableNumber}</p>
+                      {req.items && req.items.map((item, index) => (
+                        <p key={index} className="text-gray-300 text-lg">
+                          {item.quantity} x {item.item}
+                        </p>
+                      ))}
+                    </div>
+                    <button
+                      className="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition"
+                      onClick={() => handleMarkDone(tableNumber, req.id)}
+                    >
+                      Mark Done
+                    </button>
                   </div>
-                  <button
-                    className="px-4 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition"
-                    onClick={() => handleMarkDone(tableNumber, req.id)}
-                  >
-                    Mark Done
-                  </button>
-                </div>
+                )
               )
             )
-          )
-        )}
+          )}
+        </div>
       </div>
       
   

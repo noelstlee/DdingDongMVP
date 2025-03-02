@@ -15,7 +15,7 @@ function BellPageContent() {
   const restaurantId = searchParams.get("restaurantId");
   const tableId = searchParams.get("tableId");
 
-  const [menuURL, setMenuURL] = useState("");
+  const [restaurantName, setRestaurantName] = useState("");
   const [requestOptions, setRequestOptions] = useState([]);
   const [selectedItems, setSelectedItems] = useState({});
   const [loading, setLoading] = useState(true);
@@ -29,19 +29,16 @@ function BellPageContent() {
       setError("Invalid QR Code. Please scan again.");
       router.push("/");
       return;
-    }
+    };
 
-    const fetchMenuURL = async () => {
+    const fetchRestaurantName = async () => {
       try {
         const restaurantDoc = await getDoc(doc(db, "restaurants", restaurantId));
         if (restaurantDoc.exists()) {
-          setMenuURL(restaurantDoc.data().menuURL || "");
-        } else {
-          console.warn("No menu URL found for the restaurant.");
+          setRestaurantName(restaurantDoc.data().name || "");
         }
       } catch (err) {
-        console.error("Error fetching menu URL:", err);
-        setError("Failed to load menu URL. Please try again later.");
+        console.error("Error fetching restaurant name:", err);
       }
     };
 
@@ -59,7 +56,7 @@ function BellPageContent() {
       }
     );
 
-    fetchMenuURL();
+    fetchRestaurantName();
     setLoading(false);
 
     return () => unsubscribe();
@@ -179,22 +176,18 @@ function BellPageContent() {
 
   return (
     <div className={`flex flex-col items-center min-h-screen bg-white text-black p-6 relative ${poppins.className}`}>
-      
+      {/* Restaurant Name */}
+      <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2 text-center">{restaurantName}</h1>
+
       {/* Table Header */}
-      <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-6 text-center">{tableId}</h1>
+      <h1 className="text-md md:text-2xl font-semi-bold text-gray-900 mb-6 text-center">{tableId}</h1>
 
       {/* Menu Button */}
       <button
         className="w-full max-w-xs px-6 py-4 bg-[#FFC700] text-black text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-yellow-600 transition active:scale-95 mb-6"
-        onClick={() => {
-          if (menuURL) {
-            window.open(menuURL, "_blank");
-          } else {
-            alert("Menu URL not available.");
-          }
-        }}
+        onClick={() => router.push(`/menu?restaurantId=${restaurantId}`)}
       >
-        🍽️ View Menu 
+        🍽️ View Menu
       </button>
 
       {/* Request Buttons */}

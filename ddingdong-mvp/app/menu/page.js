@@ -1,15 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation"; // ✅ Get dynamic restaurantId
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { db } from "@/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
-import Image from "next/image"; // ✅ Use Next.js Image component
+import Image from "next/image";
 
-export default function CustomerMenu() {
-  const { restaurantId } = useParams(); // ✅ Get restaurantId from dynamic route
-  const [menuItems, setMenuItems] = useState([]);
-  const [error, setError] = useState(null); // ✅ Add error handling
+function MenuContent() {
+  const searchParams = useSearchParams();
+  const restaurantId = searchParams.get("restaurantId");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const menuImages = [
+    '/assets/Fried_Chicken.jpg',
+    '/assets/Soy_Garlic&Grilled.jpg',
+    '/assets/Korean_Specials.jpg',
+    '/assets/Salad&Fried_Appetizers.jpg',
+    '/assets/Whatever_Combo.jpg',
+    '/assets/Information.jpg'
+  ];
+
+  const menuCategories = [
+    'Fried Chicken',
+    'Soy Garlic & Grill',
+    'Korean Specials',
+    'Salad & Appetizers',
+    'Combo Menu',
+    'Information'
+  ];
 
   useEffect(() => {
     if (!restaurantId) {
@@ -34,51 +52,57 @@ export default function CustomerMenu() {
       }
     );
 
-    return () => unsubscribe(); // Cleanup on unmount
-  }, [restaurantId]); // ✅ Depend on restaurantId
+    return () => unsubscribe();
+  }, [restaurantId]);
+
+  if (!restaurantId) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-red-500 text-xl font-semibold">
+        Error: No restaurant ID found. Please scan the QR code again.
+      </div>
+    );
+  }
 
   return (
     <div className="p-5 bg-gray-900 text-white min-h-screen">
-      <h1 className="text-4xl font-bold text-yellow-500 mb-6">
-        {restaurantId ? `Menu for ${restaurantId}` : "Menu"}
-      </h1>
-
-      {error ? (
-        <p className="text-red-500">{error}</p>
-      ) : menuItems.length === 0 ? (
-        <p className="text-gray-400">No menu items available.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {menuItems.map((item) => (
-            <div key={item.id} className="flex items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-              {/* Image */}
-              <div className="w-20 h-20 flex-shrink-0 bg-gray-700 rounded-lg overflow-hidden">
-                {item.image ? (
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={80} // Set width
-                    height={80} // Set height
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    No Image
-                  </div>
-                )}
-              </div>
-
-              {/* Item Details */}
-              <div className="ml-4">
-                <h2 className="text-lg font-semibold">
-                  {item.name} - ${item.price}
-                </h2>
-                <p className="text-gray-400 text-sm">{item.description}</p>
-              </div>
-            </div>
+      {/* Category Navigation */}
+      <div className="flex justify-center gap-2 mb-6 overflow-x-auto pb-2 -mx-2 px-2">
+        <div className="flex flex-wrap justify-center gap-2">
+          {menuCategories.map((category, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm sm:text-base ${
+                currentImageIndex === index
+                  ? 'bg-yellow-500 text-navy font-semibold'
+                  : 'bg-gray-700 text-white hover:bg-gray-600'
+              }`}
+            >
+              {category}
+            </button>
           ))}
         </div>
-      )}
+      </div>
+
+      {/* Menu Image */}
+      <div className="relative w-full aspect-[3/4] max-w-3xl mx-auto bg-gray-800 rounded-lg overflow-hidden">
+        <Image
+          src={menuImages[currentImageIndex]}
+          alt={`${menuCategories[currentImageIndex]} Menu`}
+          fill
+          style={{ objectFit: 'contain' }}
+          quality={100}
+          priority
+        />
+      </div>
     </div>
   );
 }
+
+export default function CustomerMenu() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen bg-gray-900 text-white text-xl">Loading...</div>}>
+      <MenuContent />
+    </Suspense>
+  );
+} 

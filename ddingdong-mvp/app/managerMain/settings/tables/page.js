@@ -10,28 +10,26 @@ import { db, auth } from "@/firebase";
 // Import Font
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700", "900"] });
 
-// Update the getTableSize function to be more responsive
 const getTableSize = (tableCount, screenWidth) => {
-  // For smaller screens (tablets and phones)
-  if (screenWidth < 768) {
-    if (tableCount <= 10) return 'w-16 h-16';
-    if (tableCount <= 20) return 'w-14 h-14';
-    if (tableCount <= 30) return 'w-12 h-12';
-    return 'w-10 h-10';
-  }
-  // For medium screens
-  if (screenWidth < 1024) {
+  // For phones (smaller than 600px)
+  if (screenWidth < 600) {
     if (tableCount <= 10) return 'w-20 h-20';
     if (tableCount <= 20) return 'w-16 h-16';
     if (tableCount <= 30) return 'w-14 h-14';
     return 'w-12 h-12';
   }
-  // For larger screens (original sizes)
-  if (tableCount <= 10) return 'w-24 h-24';
-  if (tableCount <= 20) return 'w-20 h-20';
-  if (tableCount <= 30) return 'w-16 h-16';
-  if (tableCount <= 40) return 'w-14 h-14';
-  return 'w-12 h-12';
+  // For tablets (600px - 900px, including Lenovo)
+  if (screenWidth < 900) {
+    if (tableCount <= 10) return 'w-24 h-24';
+    if (tableCount <= 20) return 'w-20 h-20';
+    if (tableCount <= 30) return 'w-16 h-16';
+    return 'w-14 h-14';
+  }
+  // For larger screens (> 900px)
+  if (tableCount <= 10) return 'w-28 h-28';
+  if (tableCount <= 20) return 'w-24 h-24';
+  if (tableCount <= 30) return 'w-20 h-20';
+  return 'w-16 h-16';
 };
 
 // Draggable Table Component
@@ -106,10 +104,10 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
   
   // Make grid size responsive
   const getResponsiveGridSize = (count, screenW) => {
-    if (screenW < 768) {
+    if (screenW < 600) {
       return count <= 10 ? 32 : count <= 20 ? 28 : count <= 30 ? 24 : 20;
     }
-    if (screenW < 1024) {
+    if (screenW < 900) {
       return count <= 10 ? 40 : count <= 20 ? 32 : count <= 30 ? 28 : 24;
     }
     return count <= 10 ? 48 : count <= 20 ? 40 : count <= 30 ? 32 : 24;
@@ -131,24 +129,60 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
 
   // Calculate container size based on screen size
   const containerSize = useMemo(() => {
-    const padding = gridSize * 2;
-    
-    // Use consistent scaling based on screen size
-    if (screenWidth < 1024) { // Smaller screens
+    if (typeof window === 'undefined') {
       return {
-        width: Math.floor((screenWidth * 0.95 - padding) / gridSize) * gridSize,
-        height: Math.floor((window.innerHeight * 0.7 - padding) / gridSize) * gridSize
+        width: 800,
+        height: 600
+      };
+    }
+
+    const padding = gridSize * 2;
+    const safeScreenWidth = Math.max(window.innerWidth, 320);
+    const safeScreenHeight = Math.max(window.innerHeight, 480);
+    
+    if (screenWidth < 600) { // Phone: Size for 3-column layout
+      const numCols = 3;
+      const numRows = Math.ceil(tableCount / numCols);
+      
+      // Calculate spacing based on available width
+      const availableWidth = safeScreenWidth - (padding * 2);
+      const columnSpacing = Math.floor(availableWidth / numCols);
+      
+      // Ensure minimum spacing between tables
+      const minSpacing = gridSize * 2;
+      const actualSpacing = Math.max(columnSpacing, minSpacing);
+      
+      const requiredWidth = (numCols * actualSpacing) + (padding * 2);
+      const requiredHeight = (numRows * actualSpacing) + (padding * 2);
+      
+      return {
+        width: Math.floor(requiredWidth / gridSize) * gridSize,
+        height: Math.floor(requiredHeight / gridSize) * gridSize
       };
     }
     
-    // Larger screens
+    // For tablets and larger screens: Fill available space with maximum limits
+    const maxWidth = Math.min(safeScreenWidth * 0.95, 1600);
+    const maxHeight = Math.min(safeScreenHeight * 0.8, 1000);
+    
     return {
-      width: Math.floor((screenWidth * 0.8 - padding) / gridSize) * gridSize,
-      height: Math.floor((window.innerHeight * 0.8 - padding) / gridSize) * gridSize
+      width: Math.floor((maxWidth - padding) / gridSize) * gridSize,
+      height: Math.floor((maxHeight - padding) / gridSize) * gridSize
     };
-  }, [gridSize, screenWidth]); // Only depend on these values
+  }, [gridSize, screenWidth, tableCount]);
 
   const handleTableMove = (id, x, y, isFinal) => {
+    if (screenWidth < 600) {
+      // For phones: Snap to 3-column grid
+      const index = parseInt(id) - 1;
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const newX = (gridSize * 2) + (col * gridSize * 3);
+      const newY = (gridSize * 2) + (row * gridSize * 3);
+      onDrop(id, newX, newY);
+      return;
+    }
+
     if (!isFinal) {
       onDrop(id, x, y);
       return;
@@ -216,10 +250,11 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
     <div className="scroll-container bg-gray-900 rounded-lg p-4" 
          style={{ 
            width: '100%',
-           maxWidth: `${containerSize.width + 32}px`, // Add padding
+           maxWidth: `${containerSize.width + 32}px`,
            margin: '0 auto',
-           height: `${containerSize.height + 32}px`, // Add padding
-           overflow: 'hidden' // Prevent scrolling
+           height: screenWidth < 600 ? '60vh' : `${containerSize.height + 32}px`,
+           overflow: 'auto',
+           WebkitOverflowScrolling: 'touch'
          }}>
       <div
         ref={gridRef}
@@ -227,7 +262,8 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
         style={{ 
           width: `${containerSize.width}px`,
           height: `${containerSize.height}px`,
-          margin: '0 auto'
+          margin: '0 auto',
+          minWidth: screenWidth < 600 ? '300px' : '600px'
         }}
       >
         {gridLines}
@@ -366,19 +402,37 @@ export default function CustomizeTablesPage() {
     const startX = gridSize * 2;
     const startY = gridSize * 2;
     
-    // Calculate optimal layout based on aspect ratio
-    const aspectRatio = window.innerWidth / window.innerHeight;
-    const numRows = Math.ceil(Math.sqrt(tableCount / aspectRatio));
-    const numCols = Math.ceil(tableCount / numRows);
-    
-    for (let i = 1; i <= tableCount; i++) {
-      const col = ((i-1) % numCols);
-      const row = Math.floor((i-1) / numCols);
+    if (window.innerWidth < 600) {
+      // For phones: Calculate positions with adjusted spacing
+      const numCols = 3;
+      const availableWidth = window.innerWidth - (gridSize * 4);
+      const columnSpacing = Math.floor(availableWidth / numCols);
+      const actualSpacing = Math.max(columnSpacing, gridSize * 2);
       
-      newTables[i] = {
-        x: startX + (col * gridSize * 2), // 2x spacing between columns
-        y: startY + (row * gridSize * 2)  // 2x spacing between rows
-      };
+      for (let i = 1; i <= tableCount; i++) {
+        const index = i - 1;
+        const col = index % numCols;
+        const row = Math.floor(index / numCols);
+        
+        newTables[i] = {
+          x: startX + (col * actualSpacing),
+          y: startY + (row * actualSpacing)
+        };
+      }
+    } else {
+      // For tablets and larger screens: Use aspect ratio-based layout
+      const aspectRatio = window.innerWidth / window.innerHeight;
+      const numRows = Math.ceil(Math.sqrt(tableCount / aspectRatio));
+      const numCols = Math.ceil(tableCount / numRows);
+      
+      for (let i = 1; i <= tableCount; i++) {
+        const col = ((i-1) % numCols);
+        const row = Math.floor((i-1) / numCols);
+        newTables[i] = {
+          x: startX + (col * gridSize * 2),
+          y: startY + (row * gridSize * 2)
+        };
+      }
     }
     
     setTables(newTables);
@@ -474,13 +528,13 @@ export default function CustomizeTablesPage() {
         <div className="w-full space-y-6 mt-20 mx-auto px-4">
           <h2 className="text-2xl font-semibold text-center mb-4">Arrange Your Tables</h2>
           <p className="text-center text-gray-400 mb-4">
-            {screenWidth < 768 ? 
+            {screenWidth < 600 ? 
               "Tables are arranged in a fixed 3-column layout" : 
               "Drag and hold tables to move them around"}
           </p>
           
           <div className="overflow-auto" style={{ 
-            maxHeight: screenWidth < 768 ? undefined : 'calc(100vh - 300px)',
+            maxHeight: screenWidth < 600 ? undefined : 'calc(100vh - 300px)',
             width: '100%',
             display: 'flex',
             justifyContent: 'center'
@@ -495,7 +549,7 @@ export default function CustomizeTablesPage() {
                   id={id}
                   position={position}
                   totalTables={parseInt(tableCount)}
-                  disabled={screenWidth < 768}
+                  disabled={screenWidth < 600}
                 />
               ))}
             </LayoutGrid>

@@ -12,12 +12,13 @@ export default function SurveyPage() {
   const router = useRouter();
   const [answers, setAnswers] = useState({
     diningExperience: "",
-    easeOfUse: 3, // Default to 3 (neutral)
+    easeOfUse: 3,
     preference: "",
     feedback: "",
   });
 
   const [userId, setUserId] = useState(null);
+  const [showModal, setShowModal] = useState(false); // State for the Google Review popup
 
   useEffect(() => {
     const generatedUserId = `survey_${Date.now()}`;
@@ -37,7 +38,7 @@ export default function SurveyPage() {
         timestamp: new Date(),
       });
 
-      router.push("/endingPage"); // Redirect after submission
+      setShowModal(true); // Show the modal instead of redirecting immediately
     } catch (err) {
       console.error("Error saving survey:", err);
     }
@@ -83,9 +84,7 @@ export default function SurveyPage() {
         {/* Question 2 (Ease of Use - Horizontal Scroll Rating) */}
         <p className="text-lg font-semibold mb-2 text-gray-800">How easy was the app to use?</p>
         <div className="flex items-center justify-between w-full mb-4">
-          <span className="text-lg font-bold text-red-600 flex items-center">
-            😠 Hard
-          </span>
+          <span className="text-lg font-bold text-red-600 flex items-center">😠 Hard</span>
           <input
             type="range"
             min="1"
@@ -95,9 +94,7 @@ export default function SurveyPage() {
             className="w-3/5 cursor-pointer"
             onChange={(e) => handleSelect("easeOfUse", parseInt(e.target.value))}
           />
-          <span className="text-lg font-bold text-green-600 flex items-center">
-            😀 Easy
-          </span>
+          <span className="text-lg font-bold text-green-600 flex items-center">😀 Easy</span>
         </div>
 
         {/* Question 3 */}
@@ -146,6 +143,39 @@ export default function SurveyPage() {
           Submit
         </button>
       </div>
+
+      {/* Google Review Popup Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-96 relative">
+            {/* Close Button (Redirects to ending page) */}
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => router.push("/endingPage")}
+            >
+              ❌
+            </button>
+
+            <h2 className="text-2xl font-bold text-gray-900">Thank You!</h2>
+            <p className="text-gray-600 mt-2">Your review matters—share your experience on Google and help others discover great dining spots!</p>
+
+            <div className="flex justify-center mt-4 space-x-4">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                onClick={() => window.open("https://search.google.com/local/writereview?placeid=ChIJ-7n8wJ0F9YgRTJpNQS1gDnM", "_blank")}
+              >
+                ✅ Yes, Write Review
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-400 text-black rounded-lg"
+                onClick={() => router.push("/endingPage")}
+              >
+                ❌ No, Thanks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

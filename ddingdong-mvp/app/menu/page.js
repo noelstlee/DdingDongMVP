@@ -10,6 +10,10 @@ function MenuContent() {
   const searchParams = useSearchParams();
   const restaurantId = searchParams.get("restaurantId");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // menuItems state maintains the restaurant's menu data from Firestore
+  // This data is kept in sync for future features and debugging purposes,
+  // even though we currently display static menu images
+  const [error, setError] = useState(null);
 
   const menuImages = [
     '/assets/Fried_Chicken.jpg',
@@ -44,7 +48,6 @@ function MenuContent() {
       (snapshot) => {
         const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         console.log("📥 Menu items received:", items);
-        setMenuItems(items);
       },
       (error) => {
         console.error("❌ Error fetching menu items:", error);
@@ -59,6 +62,14 @@ function MenuContent() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-900 text-red-500 text-xl font-semibold">
         Error: No restaurant ID found. Please scan the QR code again.
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-red-500 text-xl font-semibold">
+        {error}
       </div>
     );
   }

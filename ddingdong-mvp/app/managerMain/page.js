@@ -12,82 +12,78 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 const getTableSize = (tableCount, screenWidth) => {
   // For phones (smaller than 600px)
   if (screenWidth < 600) {
-    if (tableCount <= 10) return 'w-20 h-20';
-    if (tableCount <= 20) return 'w-16 h-16';
-    if (tableCount <= 30) return 'w-14 h-14';
-    return 'w-12 h-12';
+    if (tableCount <= 10) return 'w-[5rem] h-[5rem]';
+    if (tableCount <= 20) return 'w-[4rem] h-[4rem]';
+    if (tableCount <= 30) return 'w-[3.5rem] h-[3.5rem]';
+    return 'w-[3rem] h-[3rem]';
   }
-  // For tablets (600px - 900px, including Lenovo)
+  // For tablets (600px - 900px)
   if (screenWidth < 900) {
-    if (tableCount <= 10) return 'w-24 h-24';
-    if (tableCount <= 20) return 'w-20 h-20';
-    if (tableCount <= 30) return 'w-16 h-16';
-    return 'w-14 h-14';
+    if (tableCount <= 10) return 'w-[6rem] h-[6rem]';
+    if (tableCount <= 20) return 'w-[5rem] h-[5rem]';
+    if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
+    return 'w-[3.5rem] h-[3.5rem]';
   }
   // For larger screens (> 900px)
-  if (tableCount <= 10) return 'w-28 h-28';
-  if (tableCount <= 20) return 'w-24 h-24';
-  if (tableCount <= 30) return 'w-20 h-20';
-  return 'w-16 h-16';
+  if (tableCount <= 10) return 'w-[7rem] h-[7rem]';
+  if (tableCount <= 20) return 'w-[6rem] h-[6rem]';
+  if (tableCount <= 30) return 'w-[5rem] h-[5rem]';
+  return 'w-[4rem] h-[4rem]';
 };
 
 const calculateCanvasBoundary = (tables) => {
-  if (!tables || tables.length === 0) return { width: 1600, height: 1000, gridSize: 48 };
-
-  // Safely get window dimensions with fallback values
-  const safeGetWindowDimension = () => {
-    if (typeof window === 'undefined') return { width: 1024, height: 768 };
-    return {
-      width: Math.max(320, window.innerWidth || 320),
-      height: Math.max(480, window.innerHeight || 480)
-    };
-  };
-
-  const { width: screenWidth } = safeGetWindowDimension();
+  if (!tables || tables.length === 0) return { width: '100%', height: '100%', gridSize: 3 };
   
   // Calculate grid size based on number of tables
   const tableCount = tables.length;
-  const gridSize = tableCount <= 10 ? 48 : tableCount <= 20 ? 40 : tableCount <= 30 ? 32 : 24;
-  const padding = gridSize * 3; // Increased padding for better centering
-
-  // For phones: Always use 3-column layout with adjusted spacing
-  if (screenWidth < 600) {
-    const numCols = 3;
-    const numRows = Math.ceil(tableCount / numCols);
-    
-    // Calculate spacing based on available width, ensuring minimum width
-    const availableWidth = Math.max(320, screenWidth - (padding * 2));
-    const columnSpacing = Math.max(gridSize * 2, Math.floor(availableWidth / numCols));
-    
-    // Calculate required dimensions with extra padding for icons and badges
-    const requiredWidth = (numCols * columnSpacing) + (padding * 4);
-    const requiredHeight = (numRows * columnSpacing) + (padding * 4);
-    
-    return {
-      width: Math.max(320, Math.floor(requiredWidth / gridSize) * gridSize),
-      height: Math.max(480, Math.floor(requiredHeight / gridSize) * gridSize),
-      gridSize
-    };
-  }
-
-  // For tablets and larger screens: Maintain original table layout
-  const maxWidth = Math.min(screenWidth * 0.95, 1600);
-  const maxTableSize = tableCount <= 10 ? 112 : tableCount <= 20 ? 96 : tableCount <= 30 ? 80 : 64;
-  
-  // Calculate number of columns that can fit in the width
-  const numCols = Math.floor((maxWidth - padding * 4) / (maxTableSize + gridSize));
-  const numRows = Math.ceil(tableCount / numCols);
-  
-  // Calculate required dimensions with extra padding
-  const requiredWidth = (numCols * (maxTableSize + gridSize)) + (padding * 4);
-  const requiredHeight = (numRows * (maxTableSize + gridSize)) + (padding * 4);
+  const gridSize = tableCount <= 10 ? 3 : tableCount <= 20 ? 2.5 : tableCount <= 30 ? 2 : 1.5;
   
   return {
-    width: Math.max(600, Math.floor(requiredWidth / gridSize) * gridSize),
-    height: Math.max(480, Math.floor(requiredHeight / gridSize) * gridSize),
+    width: '100%',
+    height: '100%',
     gridSize
   };
 }; 
+
+const calculateBoundingBox = (tables, screenWidth) => {
+  if (!tables || tables.length === 0) return { minX: 0, maxX: 0, minY: 0, maxY: 0, width: 0, height: 0 };
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  tables.forEach(table => {
+    let posX = table.positionX;
+    let posY = table.positionY;
+
+    if (screenWidth < 600) {
+      const index = parseInt(table.tableNumber) - 1;
+      const numCols = 3;
+      const spacing = screenWidth / 4;
+      const col = index % numCols;
+      const row = Math.floor(index / numCols);
+      posX = (spacing * 1.5) + (col * spacing);
+      posY = (spacing * 1.5) + (row * spacing);
+    } else {
+      const scale = screenWidth < 900 ? 0.7 : 0.9;
+      posX = table.positionX * scale;
+      posY = table.positionY * scale;
+    }
+
+    minX = Math.min(minX, posX);
+    maxX = Math.max(maxX, posX);
+    minY = Math.min(minY, posY);
+    maxY = Math.max(maxY, posY);
+  });
+
+  const width = maxX - minX;
+  const height = maxY - minY;
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  return { minX, maxX, minY, maxY, width, height, centerX, centerY };
+};
 
 export default function ManagerMainPage() {
   const router = useRouter();
@@ -98,15 +94,28 @@ export default function ManagerMainPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [serverCallRequests, setServerCallRequests] = useState(new Set());
+  const [serverCallRequests, setServerCallRequests] = useState(new Map());
   const [billRequests, setBillRequests] = useState(new Set());
 
   const [selectedTable, setSelectedTable] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
 
+  // Canvas size is used for table layout calculations
   const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 });
+  // Screen width is used for responsive table sizing and positioning
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  
+  // Sound for notifications
+  const [sound, setSound] = useState(null);
+
+  // Function to play the notification sound
+  const playDdingDong = () => {
+    if (sound) {
+      sound.currentTime = 0; // Reset sound to start
+      sound.play().catch(err => console.error("Error playing sound:", err));
+    }
+  };
 
   // Effect for manager data
   useEffect(() => {
@@ -151,6 +160,12 @@ export default function ManagerMainPage() {
     fetchManagerData();
   }, [router]);
 
+  // Initialize sound
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setSound(new Audio('/sounds/ddingdong.mp3'));
+  }, []);
+
   // Effect for tables and requests
   useEffect(() => {
     if (!restaurantId) return;
@@ -166,9 +181,6 @@ export default function ManagerMainPage() {
       tableList.sort((a, b) => parseInt(a.tableNumber) - parseInt(b.tableNumber));
       setTables(tableList);
 
-      // Calculate and set canvas size
-      const { width, height } = calculateCanvasBoundary(tableList);
-      setCanvasSize({ width, height });
     });
   
     console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
@@ -176,6 +188,15 @@ export default function ManagerMainPage() {
       query(collection(db, "requests"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
         const updatedRequests = {};
+        
+        // Check for new requests to play sound
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            playDdingDong(); // Play sound for new regular requests
+            console.log("🔔 New request received!");
+          }
+        });
+        
         snapshot.forEach((doc) => {
           const data = doc.data();
           const tableNumber = String(data.table);
@@ -191,6 +212,15 @@ export default function ManagerMainPage() {
       query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
         const updatedServerCalls = new Map();
+        
+        // Check for new server call requests to play sound
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            playDdingDong(); // Play sound for new server call requests
+            console.log("🔔 New server call received!");
+          }
+        });
+        
         snapshot.forEach((doc) => {
           const tableNumber = String(doc.data().table);
           if (!updatedServerCalls.has(tableNumber)) {
@@ -206,9 +236,18 @@ export default function ManagerMainPage() {
     const unsubscribeBillRequests = onSnapshot(
       query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
-        const updatedBillRequests = new Map();
+        const updatedBillRequests = new Set();
+        
+        // Check for new bill requests to play sound
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            playDdingDong(); // Play sound for new bill requests
+            console.log("🔔 New bill request received!");
+          }
+        });
+        
         snapshot.forEach((doc) => {
-          updatedBillRequests.set(String(doc.data().table), doc.id);
+          updatedBillRequests.add(String(doc.data().table));
         });
         setBillRequests(updatedBillRequests);
       }
@@ -299,9 +338,9 @@ export default function ManagerMainPage() {
       )}
 
       {/* Tables */}
-      <div className="w-full flex flex-col items-center my-8">
+      <div className="w-full flex flex-col items-center">
         {/* Active Requests Section */}
-        <div className="w-full max-w-4xl mb-6 px-4">
+        <div className="w-full max-w-4xl px-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Active Requests</h2>
             {(serverCallRequests.size > 0 || billRequests.size > 0 || Object.keys(tableRequests).length > 0) && (
@@ -313,7 +352,7 @@ export default function ManagerMainPage() {
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 mb-8">
             {Array.from(serverCallRequests.keys()).map((tableNum) => (
               <button
                 key={`server-${tableNum}`}
@@ -323,7 +362,7 @@ export default function ManagerMainPage() {
                 Table {tableNum}: 🛎️ Server Call
               </button>
             ))}
-            {Array.from(billRequests.keys()).map((tableNum) => (
+            {Array.from(billRequests).map((tableNum) => (
               <button
                 key={`bill-${tableNum}`}
                 onClick={() => openTablePopup(tableNum)}
@@ -348,106 +387,103 @@ export default function ManagerMainPage() {
           </div>
         </div>
 
-        <div className="overflow-auto" style={{ 
-          maxWidth: '100vw',
-          maxHeight: screenWidth < 600 ? '60vh' : '80vh',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          WebkitOverflowScrolling: 'touch',
-          minHeight: '300px'
+        {/* Table Formation */}
+        <div className="w-full flex justify-center items-center" style={{ 
+          height: '65vh',
+          position: 'relative'
         }}>
           <div 
-            className="relative bg-gray-800 rounded-lg"
+            className="relative w-full h-full flex items-center justify-center"
             style={{ 
-              width: `${canvasSize.width}px`, 
-              height: `${canvasSize.height}px`,
-              margin: '0 auto',
-              minWidth: '300px',
-              minHeight: '300px'
+              padding: '1rem',
+              transform: 'scale(0.95)',
+              transformOrigin: 'center center'
             }}
           >
-            {tables.map((table) => {
-              const tableNumber = String(table.tableNumber);
-              const isServerCallActive = serverCallRequests.has(tableNumber);
-              const isBillRequestActive = billRequests.has(tableNumber);
-              const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
-              const icons = [];
-              if (isServerCallActive) icons.push("🛎️");
-              if (isBillRequestActive) icons.push("💳");
-              const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
-                ? serverCallRequests.get(tableNumber).length
-                : 0;
-
-              let tableColorClass = "bg-gray-700";
-              if (unresolvedServerCallsCount >= 2) {
-                tableColorClass = "bg-red-600";
-              } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
-                tableColorClass = "bg-yellow-500";
-              } else if (unresolvedRequests.length > 0) {
-                tableColorClass = "bg-yellow-400";
-              }
-
-              // Calculate position based on screen size
-              let positionX = table.positionX;
-              let positionY = table.positionY;
+            {(() => {
+              const boundingBox = calculateBoundingBox(tables, screenWidth);
+              const containerWidth = screenWidth;
+              const containerHeight = window.innerHeight * 0.65; // 65vh
               
-              // Calculate grid size based on total number of tables
-              const gridSize = tables.length <= 10 ? 48 : tables.length <= 20 ? 40 : tables.length <= 30 ? 32 : 24;
-              
-              if (screenWidth < 600) {
-                // For mobile: Calculate positions with adjusted spacing
-                const index = parseInt(tableNumber) - 1;
-                const numCols = 3;
-                const availableWidth = Math.max(320, window.innerWidth) - (gridSize * 4); // Increased spacing
-                const columnSpacing = Math.floor(availableWidth / numCols);
-                const actualSpacing = Math.max(columnSpacing, gridSize * 2);
+              // Calculate the offset to center the bounding box
+              const offsetX = (containerWidth - boundingBox.width) / 2 - boundingBox.minX;
+              const offsetY = (containerHeight - boundingBox.height) / 2 - boundingBox.minY;
+
+              return tables.map((table) => {
+                const tableNumber = String(table.tableNumber);
+                const isServerCallActive = serverCallRequests.has(tableNumber);
+                const isBillRequestActive = billRequests.has(tableNumber);
+                const unresolvedRequests = tableRequests[tableNumber]?.filter((req) => !req.resolved) || [];
+                const unresolvedServerCallsCount = serverCallRequests.has(tableNumber)
+                  ? serverCallRequests.get(tableNumber).length
+                  : 0;
+
+                let tableColorClass = "bg-gray-700";
+                if (unresolvedServerCallsCount >= 2) {
+                  tableColorClass = "bg-red-600";
+                } else if (unresolvedServerCallsCount === 1 || isBillRequestActive) {
+                  tableColorClass = "bg-yellow-500";
+                } else if (unresolvedRequests.length > 0) {
+                  tableColorClass = "bg-yellow-400";
+                }
+
+                // Calculate position based on screen size and table count
+                let positionX = table.positionX;
+                let positionY = table.positionY;
                 
-                const col = index % numCols;
-                const row = Math.floor(index / numCols);
-                
-                positionX = (gridSize * 3) + (col * actualSpacing); // Increased left padding
-                positionY = (gridSize * 3) + (row * actualSpacing);
-              } else {
-                // For tablets and larger: Maintain original positions but scale them
-                const scale = screenWidth < 900 ? 0.8 : 1;
-                positionX = table.positionX * scale;
-                positionY = table.positionY * scale;
-              }
+                if (screenWidth < 600) {
+                  // For mobile: 3-column grid layout
+                  const index = parseInt(tableNumber) - 1;
+                  const numCols = 3;
+                  const spacing = screenWidth / 4;
+                  
+                  const col = index % numCols;
+                  const row = Math.floor(index / numCols);
+                  
+                  positionX = (spacing * 1.5) + (col * spacing);
+                  positionY = (spacing * 1.5) + (row * spacing);
+                } else {
+                  // For tablets and larger: Scale positions based on viewport
+                  const scale = screenWidth < 900 ? 0.7 : 0.9;
+                  positionX = table.positionX * scale;
+                  positionY = table.positionY * scale;
+                }
 
-              return (
-                <button
-                  key={tableNumber}
-                  className={`absolute ${getTableSize(tables.length, screenWidth)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg`}
-                  onClick={() => openTablePopup(tableNumber)}
-                  style={{
-                    left: `${positionX}px`,
-                    top: `${positionY}px`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                >
-                  {/* Table number in center */}
-                  <span className="absolute">{tableNumber}</span>
+                // Apply the centering offset
+                positionX += offsetX;
+                positionY += offsetY;
 
-                  {/* Server call icon (bell) in top-left */}
-                  {isServerCallActive && (
-                    <span className="absolute -top-0.5 -left-0.5 text-md">🛎️</span>
-                  )}
+                return (
+                  <button
+                    key={tableNumber}
+                    className={`absolute ${getTableSize(tables.length, screenWidth)} flex items-center justify-center text-xl font-bold rounded-lg transition-all ${tableColorClass} text-black shadow-lg hover:scale-105`}
+                    onClick={() => openTablePopup(tableNumber)}
+                    style={{
+                      left: `${positionX}px`,
+                      top: `${positionY}px`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: screenWidth < 600 ? '1rem' : screenWidth < 900 ? '1.25rem' : '1.5rem'
+                    }}
+                  >
+                    <span className="absolute">{tableNumber}</span>
 
-                  {/* Bill request icon (card) in bottom-right */}
-                  {isBillRequestActive && (
-                    <span className="absolute -bottom-0.5 -right-0.5 text-md">💳</span>
-                  )}
+                    {isServerCallActive && (
+                      <span className="absolute -top-1 -left-1 text-base sm:text-lg">🛎️</span>
+                    )}
 
-                  {/* Request count badge */}
-                  {unresolvedRequests.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1 py-0.5 rounded-full min-w-[1.2rem] text-center">
-                      {unresolvedRequests.length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    {isBillRequestActive && (
+                      <span className="absolute -bottom-1 -right-1 text-base sm:text-lg">💳</span>
+                    )}
+
+                    {unresolvedRequests.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1 py-0.5 rounded-full min-w-[1.2rem] text-center">
+                        {unresolvedRequests.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
       </div>
@@ -479,8 +515,17 @@ export default function ManagerMainPage() {
                     }
 
                     // Mark all bill requests as resolved
-                    for (const [, docId] of billRequests) {
-                      await updateDoc(doc(db, "billRequest", docId), { resolved: true });
+                    for (const tableNum of billRequests) {
+                      const q = query(
+                        collection(db, "billRequest"),
+                        where("restaurantId", "==", restaurantId),
+                        where("table", "==", tableNum),
+                        where("resolved", "==", false)
+                      );
+                      const querySnapshot = await getDocs(q);
+                      await Promise.all(
+                        querySnapshot.docs.map(doc => updateDoc(doc.ref, { resolved: true }))
+                      );
                     }
 
                     // Mark all table requests as resolved
@@ -568,16 +613,23 @@ export default function ManagerMainPage() {
                 </li>
               )}
 
-              {billRequests.has(selectedTable) && billRequests.get(selectedTable) && (
+              {billRequests.has(selectedTable) && (
                 <li className="flex justify-between items-center bg-gray-200 p-3 mb-2 rounded-lg">
                   <p className="text-lg font-medium text-gray-700">💳 Bill Requested</p>
                   <button
                     className="px-4 py-2 text-lg bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
                     onClick={async () => {
-                      const docId = billRequests.get(selectedTable);
-                      if (docId) {
-                        await updateDoc(doc(db, "billRequest", docId), { resolved: true });
-                      }
+                      // Query for the bill request document
+                      const q = query(
+                        collection(db, "billRequest"),
+                        where("restaurantId", "==", restaurantId),
+                        where("table", "==", selectedTable),
+                        where("resolved", "==", false)
+                      );
+                      const querySnapshot = await getDocs(q);
+                      querySnapshot.forEach(async (doc) => {
+                        await updateDoc(doc.ref, { resolved: true });
+                      });
                     }}
                   >
                     Mark Done

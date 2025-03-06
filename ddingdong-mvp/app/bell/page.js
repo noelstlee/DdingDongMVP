@@ -22,7 +22,10 @@ function BellPageContent() {
   const [error, setError] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("Request sent!");
-  const [showBillConfirmation, setShowBillConfirmation] = useState(false); // New state for bill confirmation popup
+  const [showBillConfirmation, setShowBillConfirmation] = useState(false);
+  const [promotions, setPromotions] = useState([]);
+  const [showPromotionPopup, setShowPromotionPopup] = useState(true);
+  const [dismissedPromotions, setDismissedPromotions] = useState(new Set());
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
@@ -56,10 +59,43 @@ function BellPageContent() {
       }
     );
 
+    if (!restaurantId) return;
+
+    const fetchPromotions = async () => {
+      try {
+        const today = new Date();
+        const promotionsRef = collection(db, "promotions");
+        const promotionsQuery = query(
+          promotionsRef,
+          where("restaurantId", "==", restaurantId),
+          where("active", "==", true)
+        );
+        const promotionsSnapshot = await getDocs(promotionsQuery);
+        
+        const activePromotions = promotionsSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(promo => {
+            const endDate = new Date(promo.endDate);
+            return endDate >= today;
+          })
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        setPromotions(activePromotions);
+      } catch (err) {
+        console.error("Error fetching promotions:", err);
+      }
+    };
+
     fetchRestaurantName();
+    fetchPromotions();
     setLoading(false);
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+    };
   }, [restaurantId, tableId, router]);
 
   const handleItemClick = (item, change) => {
@@ -77,7 +113,7 @@ function BellPageContent() {
 
     const formattedTableId = tableId.replace("Table ", "").trim();
 
-      // Fetch unresolved "Call Server" requests
+    // Fetch unresolved "Call Server" requests
     if (customRequest === "Call Server") {
       const q = query(
         collection(db, "serverCallRequest"),
@@ -93,7 +129,6 @@ function BellPageContent() {
         return;
       }
     }
-
 
     const requestedItems = customRequest
       ? [{ item: customRequest, quantity: 1 }]
@@ -127,7 +162,7 @@ function BellPageContent() {
   };
 
   const handleBillRequest = () => {
-    setShowBillConfirmation(true); // ✅ Fix: Open popup
+    setShowBillConfirmation(true);
   };
 
   const confirmBillRequest = async () => {
@@ -151,7 +186,6 @@ function BellPageContent() {
         requestType: "bill",
       });
 
-
       // Redirect to survey page
       router.push("/survey");
 
@@ -161,6 +195,9 @@ function BellPageContent() {
     }
   };
 
+  const handleDismissPromotion = (promotionId) => {
+    setDismissedPromotions(prev => new Set([...prev, promotionId]));
+  };
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-white text-black text-xl font-semibold">Loading...</div>;
@@ -182,13 +219,55 @@ function BellPageContent() {
       {/* Table Header */}
       <h1 className="text-md md:text-2xl font-semi-bold text-gray-900 mb-6 text-center">{tableId}</h1>
 
-      {/* Menu Button */}
-      <button
-        className="w-full max-w-xs px-6 py-4 bg-[#FFC700] text-black text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-yellow-600 transition active:scale-95 mb-6"
-        onClick={() => router.push(`/menu?restaurantId=${restaurantId}`)}
-      >
-        🍽️ View Menu
-      </button>
+      {/* Menu and Promotions Buttons */}
+      <div className="w-full max-w-xs space-y-4 mb-6">
+        <button
+          className="w-full px-6 py-4 bg-[#FFC700] text-black text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-yellow-600 transition active:scale-95"
+          onClick={() => router.push(`/menu?restaurantId=${restaurantId}`)}
+        >
+          🍽️ View Menu
+        </button>
+        <button
+          className="w-full px-6 py-4 bg-[#FFD700] text-black text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-yellow-600 transition active:scale-95"
+          onClick={() => router.push(`/promotions?restaurantId=${restaurantId}&tableId=${tableId}`)}
+        >
+          🎉 View Promotions
+        </button>
+      </div>
+
+      {/* Promotion Popup */}
+      {showPromotionPopup && promotions.length > 0 && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[80vh] overflow-y-auto relative">
+            <button
+              className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPromotionPopup(false)}
+            >
+              ×
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-center">Special Promotions!</h2>
+            <div className="space-y-4">
+              {promotions.map((promotion) => (
+                !dismissedPromotions.has(promotion.id) && (
+                  <div key={promotion.id} className="bg-yellow-50 p-4 rounded-lg relative">
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                      onClick={() => handleDismissPromotion(promotion.id)}
+                    >
+                      ×
+                    </button>
+                    <h3 className="text-lg font-semibold mb-2">{promotion.title}</h3>
+                    <p className="text-gray-700 mb-2">{promotion.details}</p>
+                    <div className="text-sm text-gray-500">
+                      <p>Valid until: {new Date(promotion.endDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Request Buttons */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-10">
@@ -200,7 +279,7 @@ function BellPageContent() {
         </button>
         <button
           className="w-full px-3 py-3 bg-[#F4A261] text-white text-md font-semibold rounded-lg shadow-md hover:bg-[#DC8A50] transition"
-          onClick={handleBillRequest} // ✅ Correctly use handleBillRequest
+          onClick={handleBillRequest}
         >
           💳 Request Bill
         </button>

@@ -49,6 +49,18 @@ export default function ManagerSettingsPage() {
       {/* Settings Container */}
       <div className="w-full max-w-lg space-y-6 text-center">
         
+        {/* Promotions Management */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-medium mb-4">Manage Promotions</h2>
+          <button 
+            className="w-full px-6 py-4 bg-gradient-to-b from-[#FFD700] to-[#FFC700] text-black text-lg font-semibold rounded-lg 
+                      shadow-[0_4px_0_#b38600] transition active:translate-y-1 active:shadow-inner"
+            onClick={() => router.push("/managerMain/promotions")}
+          >
+            🎉 Update Promotions
+          </button>
+        </div>
+
         {/* Request Menu Customization */}
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-medium mb-4">Customize Special Requests</h2>

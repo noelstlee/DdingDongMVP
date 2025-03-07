@@ -13,24 +13,17 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 const getTableSize = (tableCount, screenWidth) => {
   // For phones (smaller than 600px)
   if (screenWidth < 600) {
-    if (tableCount <= 10) return 'w-20 h-20';
-    if (tableCount <= 20) return 'w-16 h-16';
-    if (tableCount <= 30) return 'w-14 h-14';
-    return 'w-12 h-12';
-  }
-  // For tablets (600px - 900px, including Lenovo)
-  if (screenWidth < 900) {
-    if (tableCount <= 10) return 'w-24 h-24';
-    if (tableCount <= 20) return 'w-20 h-20';
-    if (tableCount <= 30) return 'w-16 h-16';
-    return 'w-14 h-14';
+    if (tableCount <= 10) return 'w-[4rem] h-[4rem]';
+    if (tableCount <= 20) return 'w-[3.5rem] h-[3.5rem]';
+    if (tableCount <= 30) return 'w-[3rem] h-[3rem]';
+    return 'w-[2.5rem] h-[2.5rem]';
   }
   // For larger screens (> 900px)
-  if (tableCount <= 10) return 'w-28 h-28';
-  if (tableCount <= 20) return 'w-24 h-24';
-  if (tableCount <= 30) return 'w-20 h-20';
-  return 'w-16 h-16';
-};
+  if (tableCount <= 10) return 'w-[6rem] h-[6rem]';
+  if (tableCount <= 20) return 'w-[5rem] h-[5rem]';
+  if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
+  return 'w-[3.5rem] h-[3.5rem]';
+}; 
 
 // Draggable Table Component
 const DraggableTable = ({ id, position, totalTables, onMove, disabled }) => {
@@ -131,12 +124,12 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
   const containerSize = useMemo(() => {
     if (typeof window === 'undefined') {
       return {
-        width: 800,
-        height: 600
+        width: 1200,
+        height: 1000
       };
     }
 
-    const padding = gridSize * 2;
+    const padding = gridSize * 3; // Increased padding
     const safeScreenWidth = Math.max(window.innerWidth, 320);
     const safeScreenHeight = Math.max(window.innerHeight, 480);
     
@@ -144,12 +137,12 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
       const numCols = 3;
       const numRows = Math.ceil(tableCount / numCols);
       
-      // Calculate spacing based on available width
+      // Calculate spacing based on available width with more space
       const availableWidth = safeScreenWidth - (padding * 2);
       const columnSpacing = Math.floor(availableWidth / numCols);
       
-      // Ensure minimum spacing between tables
-      const minSpacing = gridSize * 2;
+      // Ensure larger minimum spacing between tables
+      const minSpacing = gridSize * 3; // Increased minimum spacing
       const actualSpacing = Math.max(columnSpacing, minSpacing);
       
       const requiredWidth = (numCols * actualSpacing) + (padding * 2);
@@ -161,15 +154,15 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
       };
     }
     
-    // For tablets and larger screens: Fill available space with maximum limits
-    const maxWidth = Math.min(safeScreenWidth * 0.95, 1600);
-    const maxHeight = Math.min(safeScreenHeight * 0.8, 1000);
-    
-    return {
-      width: Math.floor((maxWidth - padding) / gridSize) * gridSize,
-      height: Math.floor((maxHeight - padding) / gridSize) * gridSize
-    };
-  }, [gridSize, screenWidth, tableCount]);
+   // For tablets and larger screens: Fill available space with increased maximum limits
+   const maxWidth = Math.min(safeScreenWidth * 0.95, 2000); // Increased from 1600
+   const maxHeight = Math.min(safeScreenHeight * 0.85, 1400); // Increased from 1000
+   
+   return {
+     width: Math.floor((maxWidth - padding) / gridSize) * gridSize,
+     height: Math.floor((maxHeight - padding) / gridSize) * gridSize
+   };
+ }, [gridSize, screenWidth, tableCount]);
 
   const handleTableMove = (id, x, y, isFinal) => {
     if (screenWidth < 600) {
@@ -279,7 +272,7 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
 
 // Keep calculateCanvasBoundary outside as it's a pure function
 const calculateCanvasBoundary = (tables) => {
-  if (Object.keys(tables).length === 0) return { width: 1600, height: 1000 };
+  if (Object.keys(tables).length === 0) return { width: 2000, height: 1400 };
 
   let minX = Infinity;
   let minY = Infinity;

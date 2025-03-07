@@ -12,24 +12,17 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "700
 const getTableSize = (tableCount, screenWidth) => {
   // For phones (smaller than 600px)
   if (screenWidth < 600) {
-    if (tableCount <= 10) return 'w-[5rem] h-[5rem]';
-    if (tableCount <= 20) return 'w-[4rem] h-[4rem]';
-    if (tableCount <= 30) return 'w-[3.5rem] h-[3.5rem]';
-    return 'w-[3rem] h-[3rem]';
-  }
-  // For tablets (600px - 900px)
-  if (screenWidth < 900) {
-    if (tableCount <= 10) return 'w-[6rem] h-[6rem]';
-    if (tableCount <= 20) return 'w-[5rem] h-[5rem]';
-    if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
-    return 'w-[3.5rem] h-[3.5rem]';
+    if (tableCount <= 10) return 'w-[4rem] h-[4rem]';
+    if (tableCount <= 20) return 'w-[3.5rem] h-[3.5rem]';
+    if (tableCount <= 30) return 'w-[3rem] h-[3rem]';
+    return 'w-[2.5rem] h-[2.5rem]';
   }
   // For larger screens (> 900px)
-  if (tableCount <= 10) return 'w-[7rem] h-[7rem]';
-  if (tableCount <= 20) return 'w-[6rem] h-[6rem]';
-  if (tableCount <= 30) return 'w-[5rem] h-[5rem]';
-  return 'w-[4rem] h-[4rem]';
-};
+  if (tableCount <= 10) return 'w-[6rem] h-[6rem]';
+  if (tableCount <= 20) return 'w-[5rem] h-[5rem]';
+  if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
+  return 'w-[3.5rem] h-[3.5rem]';
+}; 
 
 const calculateCanvasBoundary = (tables) => {
   if (!tables || tables.length === 0) return { width: '100%', height: '100%', gridSize: 3 };
@@ -101,8 +94,6 @@ export default function ManagerMainPage() {
   const [showPopup, setShowPopup] = useState(false);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
 
-  // Canvas size is used for table layout calculations
-  const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 });
   // Screen width is used for responsive table sizing and positioning
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   

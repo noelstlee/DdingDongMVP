@@ -26,7 +26,7 @@ const getTableSize = (tableCount, screenWidth) => {
 }; 
 
 // Draggable Table Component
-const DraggableTable = ({ id, position, totalTables, onMove, disabled }) => {
+const DraggableTable = ({ id, position, totalTables, onMove, disabled, label }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [currentPosition, setCurrentPosition] = useState({ x: position.x, y: position.y });
   const tableRef = useRef(null);
@@ -86,7 +86,7 @@ const DraggableTable = ({ id, position, totalTables, onMove, disabled }) => {
       onTouchEnd={handleTouchEnd}
       disabled={disabled}
     >
-      {id}
+      {label || id}
     </div>
   );
 };
@@ -319,6 +319,7 @@ export default function CustomizeTablesPage() {
   const [tables, setTables] = useState({});
   const [isLayoutMode, setIsLayoutMode] = useState(false);
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const [tableLabels, setTableLabels] = useState({});
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -361,15 +362,22 @@ export default function CustomizeTablesPage() {
           const tableCollectionRef = collection(db, `tables/${managerData.restaurantId}/table_items`);
           const tableSnapshot = await getDocs(tableCollectionRef);
           const tableData = {};
+          const labelData = {};
           tableSnapshot.docs.forEach(doc => {
             const data = doc.data();
             tableData[data.tableNumber] = {
               x: data.positionX || 0,
               y: data.positionY || 0
             };
+            labelData[data.tableNumber] = data.label || String(data.tableNumber);
           });
           setTables(tableData);
+          setTableLabels(labelData);
           setTableCount(Object.keys(tableData).length || "");
+          // Set layout mode to true if tables exist
+          if (Object.keys(tableData).length > 0) {
+            setIsLayoutMode(true);
+          }
         } else {
           setError("❌ Error: Manager data not found.");
           router.push("/auth/manager");
@@ -389,7 +397,14 @@ export default function CustomizeTablesPage() {
     if (typeof window === 'undefined') return;
 
     const newTables = {};
+    const newLabels = {};
     const gridSize = tableCount <= 10 ? 48 : tableCount <= 20 ? 40 : tableCount <= 30 ? 32 : 24;
+    
+    // If there are existing tables with the same count, preserve their positions and labels
+    if (Object.keys(tables).length === parseInt(tableCount)) {
+      setIsLayoutMode(true);
+      return;
+    }
     
     // Start with some padding from the edges
     const startX = gridSize * 2;
@@ -403,6 +418,13 @@ export default function CustomizeTablesPage() {
       const actualSpacing = Math.max(columnSpacing, gridSize * 2);
       
       for (let i = 1; i <= tableCount; i++) {
+        // Preserve existing table position and label if available
+        if (tables[i]) {
+          newTables[i] = tables[i];
+          newLabels[i] = tableLabels[i] || String(i);
+          continue;
+        }
+        
         const index = i - 1;
         const col = index % numCols;
         const row = Math.floor(index / numCols);
@@ -411,6 +433,7 @@ export default function CustomizeTablesPage() {
           x: startX + (col * actualSpacing),
           y: startY + (row * actualSpacing)
         };
+        newLabels[i] = String(i);
       }
     } else {
       // For tablets and larger screens: Use aspect ratio-based layout
@@ -419,16 +442,25 @@ export default function CustomizeTablesPage() {
       const numCols = Math.ceil(tableCount / numRows);
       
       for (let i = 1; i <= tableCount; i++) {
+        // Preserve existing table position and label if available
+        if (tables[i]) {
+          newTables[i] = tables[i];
+          newLabels[i] = tableLabels[i] || String(i);
+          continue;
+        }
+        
         const col = ((i-1) % numCols);
         const row = Math.floor((i-1) / numCols);
         newTables[i] = {
           x: startX + (col * gridSize * 2),
           y: startY + (row * gridSize * 2)
         };
+        newLabels[i] = String(i);
       }
     }
     
     setTables(newTables);
+    setTableLabels(newLabels);
     setIsLayoutMode(true);
   };
 
@@ -447,7 +479,6 @@ export default function CustomizeTablesPage() {
 
     const { startX, startY } = calculateCanvasBoundary(tables);
     
-    // Adjust table positions relative to the optimized boundary
     const optimizedTables = {};
     Object.entries(tables).forEach(([id, position]) => {
       optimizedTables[id] = {
@@ -464,12 +495,13 @@ export default function CustomizeTablesPage() {
       const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
 
-      // Add new tables with optimized positions
+      // Add new tables with optimized positions and labels
       const addPromises = Object.entries(optimizedTables).map(([tableNumber, position]) => 
         setDoc(doc(tableCollectionRef, `Table ${tableNumber}`), {
           tableNumber: parseInt(tableNumber),
           positionX: position.x,
-          positionY: position.y
+          positionY: position.y,
+          label: tableLabels[tableNumber] || String(tableNumber)
         })
       );
       await Promise.all(addPromises);
@@ -479,6 +511,13 @@ export default function CustomizeTablesPage() {
     } catch (error) {
       console.error("❌ Error updating tables:", error);
     }
+  };
+
+  const handleLabelChange = (tableNumber, newLabel) => {
+    setTableLabels(prev => ({
+      ...prev,
+      [tableNumber]: newLabel
+    }));
   };
 
   return (
@@ -527,7 +566,7 @@ export default function CustomizeTablesPage() {
           </p>
           
           <div className="overflow-auto" style={{ 
-            maxHeight: screenWidth < 600 ? undefined : 'calc(100vh - 300px)',
+            maxHeight: screenWidth < 600 ? '60vh' : 'calc(100vh - 400px)',
             width: '100%',
             display: 'flex',
             justifyContent: 'center'
@@ -543,9 +582,29 @@ export default function CustomizeTablesPage() {
                   position={position}
                   totalTables={parseInt(tableCount)}
                   disabled={screenWidth < 600}
+                  label={tableLabels[id]}
                 />
               ))}
             </LayoutGrid>
+          </div>
+          
+          <div className="w-full max-w-4xl mx-auto mt-12 bg-gray-800 p-8 rounded-lg">
+            <h3 className="text-xl font-semibold mb-6">Customize Table Labels</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+              {Object.keys(tables).map(tableNumber => (
+                <div key={tableNumber} className="flex flex-col space-y-3">
+                  <label className="text-sm text-gray-400">Table {tableNumber}</label>
+                  <input
+                    type="text"
+                    value={tableLabels[tableNumber] || ''}
+                    onChange={(e) => handleLabelChange(tableNumber, e.target.value)}
+                    className="px-4 py-3 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 text-lg"
+                    placeholder={`Table ${tableNumber}`}
+                    maxLength={10}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
           
           <div className="flex justify-center mt-6">

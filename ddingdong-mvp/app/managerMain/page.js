@@ -99,14 +99,64 @@ export default function ManagerMainPage() {
   
   // Sound for notifications
   const [sound, setSound] = useState(null);
+  const [soundInterval, setSoundInterval] = useState(null);
 
   // Function to play the notification sound
   const playDdingDong = () => {
     if (sound) {
-      sound.currentTime = 0; // Reset sound to start
+      sound.currentTime = 0;
       sound.play().catch(err => console.error("Error playing sound:", err));
     }
   };
+
+  // Function to check if there are any unresolved requests
+  const hasUnresolvedRequests = () => {
+    return (
+      serverCallRequests.size > 0 ||
+      billRequests.size > 0 ||
+      Object.values(tableRequests).some(requests => 
+        requests.some(req => !req.resolved)
+      )
+    );
+  };
+
+  // Effect to manage continuous sound playing
+  useEffect(() => {
+    let interval = null;
+
+    const startSoundInterval = () => {
+      if (hasUnresolvedRequests() && sound) {
+        playDdingDong(); // Play immediately
+        interval = setInterval(playDdingDong, 3000);
+        setSoundInterval(interval);
+      }
+    };
+
+    const stopSoundInterval = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+        setSoundInterval(null);
+      }
+    };
+
+    if (hasUnresolvedRequests() && sound) {
+      stopSoundInterval(); // Clear any existing interval
+      startSoundInterval(); // Start a new interval
+    } else {
+      stopSoundInterval();
+    }
+
+    return () => {
+      stopSoundInterval();
+    };
+  }, [serverCallRequests.size, billRequests.size, Object.keys(tableRequests).length, sound]);
+
+  // Initialize sound
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setSound(new Audio('/sounds/ddingdong.mp3'));
+  }, []);
 
   // Effect for manager data
   useEffect(() => {
@@ -151,12 +201,6 @@ export default function ManagerMainPage() {
     fetchManagerData();
   }, [router]);
 
-  // Initialize sound
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setSound(new Audio('/sounds/ddingdong.mp3'));
-  }, []);
-
   // Effect for tables and requests
   useEffect(() => {
     if (!restaurantId) return;
@@ -166,12 +210,12 @@ export default function ManagerMainPage() {
     const unsubscribeTables = onSnapshot(tableCollectionRef, (snapshot) => {
       const tableList = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        label: doc.data().label || String(doc.data().tableNumber)
       }));
       console.log("✅ Tables fetched:", tableList);
       tableList.sort((a, b) => parseInt(a.tableNumber) - parseInt(b.tableNumber));
       setTables(tableList);
-
     });
   
     console.log(`📡 Listening for requests for restaurant: ${restaurantId}`);
@@ -179,15 +223,6 @@ export default function ManagerMainPage() {
       query(collection(db, "requests"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
         const updatedRequests = {};
-        
-        // Check for new requests to play sound
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            playDdingDong(); // Play sound for new regular requests
-            console.log("🔔 New request received!");
-          }
-        });
-        
         snapshot.forEach((doc) => {
           const data = doc.data();
           const tableNumber = String(data.table);
@@ -203,15 +238,6 @@ export default function ManagerMainPage() {
       query(collection(db, "serverCallRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
         const updatedServerCalls = new Map();
-        
-        // Check for new server call requests to play sound
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            playDdingDong(); // Play sound for new server call requests
-            console.log("🔔 New server call received!");
-          }
-        });
-        
         snapshot.forEach((doc) => {
           const tableNumber = String(doc.data().table);
           if (!updatedServerCalls.has(tableNumber)) {
@@ -228,15 +254,6 @@ export default function ManagerMainPage() {
       query(collection(db, "billRequest"), where("restaurantId", "==", restaurantId), where("resolved", "==", false)),
       (snapshot) => {
         const updatedBillRequests = new Set();
-        
-        // Check for new bill requests to play sound
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            playDdingDong(); // Play sound for new bill requests
-            console.log("🔔 New bill request received!");
-          }
-        });
-        
         snapshot.forEach((doc) => {
           updatedBillRequests.add(String(doc.data().table));
         });
@@ -249,6 +266,11 @@ export default function ManagerMainPage() {
       unsubscribeRequests();
       unsubscribeServerCalls();
       unsubscribeBillRequests();
+      // Clear sound interval on cleanup
+      if (soundInterval) {
+        clearInterval(soundInterval);
+        setSoundInterval(null);
+      }
     };
   }, [restaurantId]);
 
@@ -344,34 +366,44 @@ export default function ManagerMainPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-4 mb-8">
-            {Array.from(serverCallRequests.keys()).map((tableNum) => (
-              <button
-                key={`server-${tableNum}`}
-                onClick={() => openTablePopup(tableNum)}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
-              >
-                Table {tableNum}: 🛎️ Server Call
-              </button>
-            ))}
-            {Array.from(billRequests).map((tableNum) => (
-              <button
-                key={`bill-${tableNum}`}
-                onClick={() => openTablePopup(tableNum)}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
-              >
-                Table {tableNum}: 💳 Bill
-              </button>
-            ))}
+            {Array.from(serverCallRequests.keys()).map((tableNum) => {
+              const table = tables.find(t => String(t.tableNumber) === tableNum);
+              const displayName = table?.label || `Table ${tableNum}`;
+              return (
+                <button
+                  key={`server-${tableNum}`}
+                  onClick={() => openTablePopup(tableNum)}
+                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
+                >
+                  {displayName}: 🛎️ Server Call
+                </button>
+              );
+            })}
+            {Array.from(billRequests).map((tableNum) => {
+              const table = tables.find(t => String(t.tableNumber) === tableNum);
+              const displayName = table?.label || `Table ${tableNum}`;
+              return (
+                <button
+                  key={`bill-${tableNum}`}
+                  onClick={() => openTablePopup(tableNum)}
+                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
+                >
+                  {displayName}: 💳 Bill
+                </button>
+              );
+            })}
             {Object.entries(tableRequests).map(([tableNum, requests]) => {
               const unresolvedCount = requests.filter(req => !req.resolved).length;
               if (unresolvedCount === 0) return null;
+              const table = tables.find(t => String(t.tableNumber) === tableNum);
+              const displayName = table?.label || `Table ${tableNum}`;
               return (
                 <button
                   key={`request-${tableNum}`}
                   onClick={() => openTablePopup(tableNum)}
                   className="px-4 py-2 bg-yellow-400 text-black rounded-lg font-medium hover:bg-yellow-300 transition"
                 >
-                  Table {tableNum}: {unresolvedCount} items
+                  {displayName}: {unresolvedCount} items
                 </button>
               );
             })}
@@ -453,10 +485,10 @@ export default function ManagerMainPage() {
                       left: `${positionX}px`,
                       top: `${positionY}px`,
                       transform: 'translate(-50%, -50%)',
-                      fontSize: screenWidth < 600 ? '1rem' : screenWidth < 900 ? '1.25rem' : '1.5rem'
+                      fontSize: screenWidth < 600 ? '0.875rem' : screenWidth < 900 ? '1rem' : '1.25rem'
                     }}
                   >
-                    <span className="absolute">{tableNumber}</span>
+                    <span className="absolute">{table.label || tableNumber}</span>
 
                     {isServerCallActive && (
                       <span className="absolute -top-1 -left-1 text-base sm:text-lg">🛎️</span>
@@ -557,7 +589,9 @@ export default function ManagerMainPage() {
               ✖
             </button>
 
-            <h2 className="text-2xl text-center font-semibold mb-4">Table {selectedTable}</h2>
+            <h2 className="text-2xl text-center font-semibold mb-4">
+              {tables.find(t => String(t.tableNumber) === selectedTable)?.label || `Table ${selectedTable}`}
+            </h2>
 
             <ul>
               {tableRequests[selectedTable]?.map((req) => (

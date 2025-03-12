@@ -25,7 +25,6 @@ function BellPageContent() {
   const [showBillConfirmation, setShowBillConfirmation] = useState(false);
   const [promotions, setPromotions] = useState([]);
   const [showPromotionPopup, setShowPromotionPopup] = useState(true);
-  const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
@@ -34,10 +33,6 @@ function BellPageContent() {
       return;
     };
 
-    if (typeof window !== 'undefined') {
-      const isDismissed = localStorage.getItem(`promotion_dismissed_${restaurantId}`);
-      setPermanentlyDismissed(isDismissed === 'true');
-    }
     // Fetch restaurant name
     const fetchRestaurantName = async () => {
       try {
@@ -72,7 +67,7 @@ function BellPageContent() {
         const promotionsRef = collection(db, "promotions");
         const promotionsQuery = query(
           promotionsRef,
-          where("retaurantId", "==", restaurantId),
+          where("restaurantId", "==", restaurantId),
           where("active", "==", true)
         );
         const promotionsSnapshot = await getDocs(promotionsQuery);
@@ -87,6 +82,7 @@ function BellPageContent() {
           })
           .sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
 
+        console.log("Fetched promotions:", activePromotions);
         setPromotions(activePromotions);
       } catch (err) {
         console.error("Error fetching promotions:", err);
@@ -100,12 +96,12 @@ function BellPageContent() {
     return () => unsubscribe();
   }, [restaurantId, tableId, router]);
 
-    // Reset showPromotionPopup when promotions change or when returning to the page
+  // Reset showPromotionPopup when promotions change or when returning to the page
   useEffect(() => {
-    if (promotions.length > 0 && !permanentlyDismissed) {
+    if (promotions.length > 0) {
       setShowPromotionPopup(true);
     }
-  }, [promotions, permanentlyDismissed]);
+  }, [promotions]);
   
   const handleItemClick = (item, change) => {
     setSelectedItems((prev) => ({
@@ -199,12 +195,8 @@ function BellPageContent() {
     }
   };
 
-  const handleDismissPromotion = (permanent = false) => {
+  const handleDismissPromotion = () => {
     setShowPromotionPopup(false);
-    if (permanent && typeof window !== 'undefined') {
-      setPermanentlyDismissed(true);
-      localStorage.setItem(`promotion_dismissed_${restaurantId}`, 'true');
-    }
   };
 
 
@@ -245,22 +237,23 @@ function BellPageContent() {
         </button>
       </div>
       {/* Promotion Popup */}
-      {showPromotionPopup && promotions.length > 0 && !permanentlyDismissed && (
+      {showPromotionPopup && promotions.length > 0 && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[80vh] overflow-y-auto relative">
             <button
               className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-700"
-              onClick={() => handleDismissPromotion(false)}
+              onClick={handleDismissPromotion}
             >
               ×
             </button>
-            <h2 className="text-2xl font-bold mb-4 text-center">Special Promotions!</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">🎉 Special Promotions!</h2>
             <div className="space-y-4">
               {promotions.map((promotion) => (
-                <div key={promotion.id} className="bg-yellow-50 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">{promotion.title}</h3>
-                  <p className="text-gray-700 mb-2">{promotion.details}</p>
+                <div key={promotion.id} className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h3 className="text-lg font-semibold mb-2 text-yellow-800">{promotion.title}</h3>
+                  <p className="text-gray-700 mb-2">{promotion.details || "N/A"}</p>
                   <div className="text-sm text-gray-500">
+                    <p>Valid from: {new Date(promotion.startDate).toLocaleDateString()}</p>
                     <p>Valid until: {new Date(promotion.endDate).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -268,10 +261,10 @@ function BellPageContent() {
             </div>
             <div className="mt-4 flex justify-center">
               <button
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                onClick={() => handleDismissPromotion(true)}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+                onClick={handleDismissPromotion}
               >
-                Do not show again
+                Close
               </button>
             </div>
           </div>

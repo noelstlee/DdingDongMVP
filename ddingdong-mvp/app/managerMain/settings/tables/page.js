@@ -520,6 +520,71 @@ export default function CustomizeTablesPage() {
     }));
   };
 
+  // Add function to handle adding a new table
+  const handleAddTable = (afterTableNumber) => {
+    const tableNum = parseInt(afterTableNumber);
+    const newTableNumber = tableNum + 1;
+    const newTables = {};
+    const newLabels = {};
+    
+    // Shift all tables with numbers >= newTableNumber
+    Object.entries(tables).forEach(([id, position]) => {
+      const idNum = parseInt(id);
+      if (idNum >= newTableNumber) {
+        // Move existing table to a higher number
+        newTables[idNum + 1] = position;
+        newLabels[idNum + 1] = tableLabels[idNum] || String(idNum + 1);
+      } else {
+        // Keep tables with lower numbers as is
+        newTables[idNum] = position;
+        newLabels[idNum] = tableLabels[idNum] || String(idNum);
+      }
+    });
+    
+    // Add the new table at the top-left corner of the grid
+    const gridSize = tableCount <= 10 ? 48 : tableCount <= 20 ? 40 : tableCount <= 30 ? 32 : 24;
+    newTables[newTableNumber] = {
+      x: gridSize * 2,
+      y: gridSize * 2
+    };
+    newLabels[newTableNumber] = String(newTableNumber);
+    
+    setTables(newTables);
+    setTableLabels(newLabels);
+    setTableCount(Object.keys(newTables).length);
+  };
+
+  // Add function to handle removing a table
+  const handleRemoveTable = (tableNumberToRemove) => {
+    if (Object.keys(tables).length <= 1) {
+      alert("You must have at least one table.");
+      return;
+    }
+
+    const tableNum = parseInt(tableNumberToRemove);
+    const newTables = {};
+    const newLabels = {};
+    
+    // Remove the specified table and shift all higher-numbered tables down
+    Object.entries(tables).forEach(([id, position]) => {
+      const idNum = parseInt(id);
+      if (idNum < tableNum) {
+        // Keep tables with lower numbers as is
+        newTables[idNum] = position;
+        newLabels[idNum] = tableLabels[idNum] || String(idNum);
+      } else if (idNum > tableNum) {
+        // Shift tables with higher numbers down by 1
+        newTables[idNum - 1] = position;
+        newLabels[idNum - 1] = tableLabels[idNum] || String(idNum - 1);
+      }
+      // Skip the table to be removed (idNum === tableNum)
+    });
+    
+    setTables(newTables);
+    setTableLabels(newLabels);
+    setTableCount(Object.keys(newTables).length);
+  };
+
   return (
     <div className={`flex flex-col items-center min-h-screen p-6 bg-gray-900 text-white font-semibold ${poppins.className}`}>
       <button
@@ -593,7 +658,25 @@ export default function CustomizeTablesPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
               {Object.keys(tables).map(tableNumber => (
                 <div key={tableNumber} className="flex flex-col space-y-3">
-                  <label className="text-sm text-gray-400">Table {tableNumber}</label>
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm text-gray-400">Table {tableNumber}</label>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleAddTable(tableNumber)}
+                        className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center hover:bg-green-600 transition"
+                        title="Add table after this one"
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => handleRemoveTable(tableNumber)}
+                        className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                        title="Remove this table"
+                      >
+                        -
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="text"
                     value={tableLabels[tableNumber] || ''}

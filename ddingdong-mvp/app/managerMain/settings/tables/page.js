@@ -125,13 +125,13 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
     if (typeof window === 'undefined') {
       return {
         width: 1200,
-        height: 1000
+        height: 2000
       };
     }
 
     const padding = gridSize * 3; // Increased padding
     const safeScreenWidth = Math.max(window.innerWidth, 320);
-    const safeScreenHeight = Math.max(window.innerHeight, 480);
+    const safeScreenHeight = Math.max(window.innerHeight * 2, 960);
     
     if (screenWidth < 600) { // Phone: Size for 3-column layout
       const numCols = 3;
@@ -155,8 +155,8 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
     }
     
    // For tablets and larger screens: Fill available space with increased maximum limits
-   const maxWidth = Math.min(safeScreenWidth * 0.95, 2000); // Increased from 1600
-   const maxHeight = Math.min(safeScreenHeight * 0.85, 1400); // Increased from 1000
+   const maxWidth = Math.min(safeScreenWidth * 0.95, 2000);
+   const maxHeight = Math.min(safeScreenHeight * 1.5, 2400); // Increased from 1000
    
    return {
      width: Math.floor((maxWidth - padding) / gridSize) * gridSize,
@@ -245,7 +245,7 @@ const LayoutGrid = ({ children, onDrop, tableCount }) => {
            width: '100%',
            maxWidth: `${containerSize.width + 32}px`,
            margin: '0 auto',
-           height: screenWidth < 600 ? '60vh' : `${containerSize.height + 32}px`,
+           height: screenWidth < 600 ? '80vh' : '80vh',
            overflow: 'auto',
            WebkitOverflowScrolling: 'touch'
          }}>

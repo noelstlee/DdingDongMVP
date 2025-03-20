@@ -25,6 +25,7 @@ function BellPageContent() {
   const [showBillConfirmation, setShowBillConfirmation] = useState(false);
   const [promotions, setPromotions] = useState([]);
   const [showPromotionPopup, setShowPromotionPopup] = useState(true);
+  const [tableLabel, setTableLabel] = useState("");
 
   useEffect(() => {
     if (!restaurantId || !tableId) {
@@ -33,15 +34,30 @@ function BellPageContent() {
       return;
     };
 
-    // Fetch restaurant name
-    const fetchRestaurantName = async () => {
+    // Fetch restaurant name and table label
+    const fetchRestaurantAndTableInfo = async () => {
       try {
         const restaurantDoc = await getDoc(doc(db, "restaurants", restaurantId));
         if (restaurantDoc.exists()) {
           setRestaurantName(restaurantDoc.data().name || "");
         }
+
+        // Extract table number from tableId and convert to number
+        const tableNumber = parseInt(tableId.replace("Table ", "").trim());
+
+        // Fetch table label
+        const tablesRef = collection(db, "tables", restaurantId, "table_items");
+        const tablesQuery = query(tablesRef, where("tableNumber", "==", tableNumber));
+        const tableSnapshot = await getDocs(tablesQuery);
+        
+        if (!tableSnapshot.empty) {
+          const tableData = tableSnapshot.docs[0].data();
+          setTableLabel(tableData.label || String(tableNumber));
+        } else {
+          setTableLabel(String(tableNumber));
+        }
       } catch (err) {
-        console.error("Error fetching restaurant name:", err);
+        console.error("Error fetching restaurant or table info:", err);
       }
     };
 
@@ -89,7 +105,7 @@ function BellPageContent() {
       }
     }
 
-    fetchRestaurantName();
+    fetchRestaurantAndTableInfo();
     fetchPromotions();
     setLoading(false);
 
@@ -219,7 +235,7 @@ function BellPageContent() {
       <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 text-center">{restaurantName}</h1>
 
       {/* Table Header */}
-      <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-6 text-center">{tableId}</h2>
+      <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-6 text-center">{tableLabel}</h2>
 
       {/* Menu Button */}
       <div className="w-full max-w-xs space-y-4 mb-5">

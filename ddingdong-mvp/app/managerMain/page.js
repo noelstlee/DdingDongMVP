@@ -17,7 +17,24 @@ const getTableSize = (tableCount, screenWidth) => {
     if (tableCount <= 30) return 'w-[3rem] h-[3rem]';
     return 'w-[2.5rem] h-[2.5rem]';
   }
-  // For larger screens (> 900px)
+
+  // For tablets (600px - 900px)
+  if (screenWidth < 900) {
+    if (tableCount <= 10) return 'w-[5rem] h-[5rem]';
+    if (tableCount <= 20) return 'w-[4.5rem] h-[4.5rem]';
+    if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
+    return 'w-[3.5rem] h-[3.5rem]';
+  }
+
+  // For large screens (> 1400px)
+  if (screenWidth > 1400) {
+    if (tableCount <= 10) return 'w-[8rem] h-[8rem]';
+    if (tableCount <= 20) return 'w-[7rem] h-[7rem]';
+    if (tableCount <= 30) return 'w-[6rem] h-[6rem]';
+    return 'w-[5rem] h-[5rem]';
+  }
+
+  // For normal screens (900px - 1400px)
   if (tableCount <= 10) return 'w-[6rem] h-[6rem]';
   if (tableCount <= 20) return 'w-[5rem] h-[5rem]';
   if (tableCount <= 30) return 'w-[4rem] h-[4rem]';
@@ -86,6 +103,8 @@ export default function ManagerMainPage() {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [resolvedRequests, setResolvedRequests] = useState([]);
+  const [lastRenewalDate, setLastRenewalDate] = useState(null);
 
   const [serverCallRequests, setServerCallRequests] = useState(new Map());
   const [billRequests, setBillRequests] = useState(new Set());
@@ -99,18 +118,17 @@ export default function ManagerMainPage() {
   
   // Sound for notifications
   const [sound, setSound] = useState(null);
-  const [soundInterval, setSoundInterval] = useState(null);
 
-  // Function to play the notification sound
-  const playDdingDong = () => {
+  // Effect to manage continuous sound playing
+  useEffect(() => {
+    const playSound = () => {
     if (sound) {
       sound.currentTime = 0;
       sound.play().catch(err => console.error("Error playing sound:", err));
     }
   };
 
-  // Function to check if there are any unresolved requests
-  const hasUnresolvedRequests = () => {
+    const checkUnresolvedRequests = () => {
     return (
       serverCallRequests.size > 0 ||
       billRequests.size > 0 ||
@@ -120,42 +138,33 @@ export default function ManagerMainPage() {
     );
   };
 
-  // Effect to manage continuous sound playing
-  useEffect(() => {
     let interval = null;
+    const hasRequests = checkUnresolvedRequests();
 
-    const startSoundInterval = () => {
-      if (hasUnresolvedRequests() && sound) {
-        playDdingDong(); // Play immediately
-        interval = setInterval(playDdingDong, 3000);
-        setSoundInterval(interval);
-      }
-    };
-
-    const stopSoundInterval = () => {
-      if (interval) {
-        clearInterval(interval);
-        interval = null;
-        setSoundInterval(null);
-      }
-    };
-
-    if (hasUnresolvedRequests() && sound) {
-      stopSoundInterval(); // Clear any existing interval
-      startSoundInterval(); // Start a new interval
-    } else {
-      stopSoundInterval();
+    if (sound && hasRequests) {
+      playSound();
+      interval = setInterval(playSound, 3000);
     }
 
     return () => {
-      stopSoundInterval();
+      if (interval) {
+        clearInterval(interval);
+      }
     };
-  }, [serverCallRequests.size, billRequests.size, Object.keys(tableRequests).length, sound]);
+  }, [sound, serverCallRequests, billRequests, tableRequests]);
 
   // Initialize sound
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setSound(new Audio('/sounds/ddingdong.mp3'));
+    const audio = new Audio('/sounds/ddingdong.mp3');
+    setSound(audio);
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    };
   }, []);
 
   // Effect for manager data
@@ -266,11 +275,6 @@ export default function ManagerMainPage() {
       unsubscribeRequests();
       unsubscribeServerCalls();
       unsubscribeBillRequests();
-      // Clear sound interval on cleanup
-      if (soundInterval) {
-        clearInterval(soundInterval);
-        setSoundInterval(null);
-      }
     };
   }, [restaurantId]);
 
@@ -291,8 +295,12 @@ export default function ManagerMainPage() {
   const handleMarkDone = async (tableNumber, requestId) => {
     try {
       const requestRef = doc(db, "requests", requestId);
-      await updateDoc(requestRef, { resolved: true });
-      await updateDoc(requestRef, { customerNotification: "Your request is on its way!" });
+      const timestamp = new Date();
+      await updateDoc(requestRef, { 
+        resolved: true,
+        customerNotification: "Your request is on its way!",
+        resolvedAt: timestamp 
+      });
     } catch (err) {
       console.error("❌ Error marking request as done:", err);
     }
@@ -306,6 +314,102 @@ export default function ManagerMainPage() {
   const closeTablePopup = () => {
     setShowPopup(false);
   };
+
+  // Effect for resolved requests and table renewal
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    const fetchResolvedRequests = () => {
+      // Fetch resolved normal requests
+      const resolvedRequestsQuery = query(
+        collection(db, "requests"),
+        where("restaurantId", "==", restaurantId),
+        where("resolved", "==", true)
+      );
+
+      // Fetch resolved server call requests
+      const resolvedServerCallsQuery = query(
+        collection(db, "serverCallRequest"),
+        where("restaurantId", "==", restaurantId),
+        where("resolved", "==", true)
+      );
+
+      // Fetch resolved bill requests
+      const resolvedBillRequestsQuery = query(
+        collection(db, "billRequest"),
+        where("restaurantId", "==", restaurantId),
+        where("resolved", "==", true)
+      );
+
+      const unsubscribeRequests = onSnapshot(resolvedRequestsQuery, (snapshot) => {
+        const normalRequests = snapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'normal',
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        }));
+        
+        updateResolvedRequests(normalRequests);
+      });
+
+      const unsubscribeServerCalls = onSnapshot(resolvedServerCallsQuery, (snapshot) => {
+        const serverCalls = snapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'serverCall',
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        }));
+        
+        updateResolvedRequests(serverCalls);
+      });
+
+      const unsubscribeBillRequests = onSnapshot(resolvedBillRequestsQuery, (snapshot) => {
+        const billRequests = snapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'bill',
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date()
+        }));
+        
+        updateResolvedRequests(billRequests);
+      });
+
+      return () => {
+        unsubscribeRequests();
+        unsubscribeServerCalls();
+        unsubscribeBillRequests();
+      };
+    };
+
+    const updateResolvedRequests = (newRequests) => {
+      setResolvedRequests(prev => {
+        const now = new Date();
+        const renewalTime = new Date(now);
+        renewalTime.setHours(11, 0, 0, 0);
+    
+        let combined;
+        if (now >= renewalTime && (!lastRenewalDate || lastRenewalDate < renewalTime)) {
+          setLastRenewalDate(now);
+          combined = newRequests.filter(req => req.timestamp > renewalTime);
+        } else {
+          combined = [...(prev || []), ...newRequests];
+        }
+    
+        // Deduplicate based on a unique key (type and id)
+        const deduped = Array.from(
+          new Map(combined.map(req => [`${req.type}-${req.id}`, req])).values()
+        );
+    
+        return deduped.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
+      });
+    };
+    
+
+    const unsubscribe = fetchResolvedRequests();
+    return () => {
+      unsubscribe();
+    };
+  }, [restaurantId, lastRenewalDate]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen bg-gray-900 text-yellow-400">Loading...</div>;
@@ -327,13 +431,182 @@ export default function ManagerMainPage() {
   }
 
   return (
-    <div className={`flex flex-col min-h-screen bg-gray-900 text-white p-4 ${poppins.className}`}>
+    <div className={`flex min-h-screen bg-gray-900 text-white ${poppins.className}`}>
+      {/* History Table with Active Requests */}
+      <div className="w-1/5 min-w-[250px] max-w-[300px] h-screen overflow-y-auto border-r border-gray-700 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Request History</h2>
+          {(serverCallRequests.size > 0 || billRequests.size > 0 || Object.keys(tableRequests).length > 0) && (
+            <button
+              onClick={() => setShowConfirmPopup(true)}
+              className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg font-medium hover:bg-green-600 transition"
+            >
+              Mark All Done
+            </button>
+          )}
+        </div>
+        <div className="space-y-3">
+          {/* Active Server Calls */}
+          {Array.from(serverCallRequests.entries()).map(([tableNum, docIds]) => {
+            const tableLabel = tables.find(t => String(t.tableNumber) === tableNum)?.label || tableNum;
+            return (
+              <div 
+                key={`server-${tableNum}`}
+                className="p-3 rounded-lg bg-gray-800 border-l-4 border-yellow-400 cursor-pointer hover:bg-gray-700"
+                onClick={() => openTablePopup(tableNum)}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-yellow-400 font-medium">
+                      Table {tableLabel}
+                    </div>
+                    <div className="text-yellow-300">
+                      🛎️ Server Call ({docIds.length})
+                    </div>
+                  </div>
+                  <button
+                    className="px-2 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await Promise.all(
+                          docIds.map(docId => updateDoc(doc(db, "serverCallRequest", docId), { resolved: true }))
+                        );
+                      } catch (err) {
+                        console.error("❌ Error resolving server calls:", err);
+                      }
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Active Bill Requests */}
+          {Array.from(billRequests).map((tableNum) => {
+            const tableLabel = tables.find(t => String(t.tableNumber) === tableNum)?.label || tableNum;
+            return (
+              <div 
+                key={`bill-${tableNum}`}
+                className="p-3 rounded-lg bg-gray-800 border-l-4 border-yellow-400 cursor-pointer hover:bg-gray-700"
+                onClick={() => openTablePopup(tableNum)}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-yellow-400 font-medium">
+                      Table {tableLabel}
+                    </div>
+                    <div className="text-yellow-300">
+                      💳 Bill Request
+                    </div>
+                  </div>
+                  <button
+                    className="px-2 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const q = query(
+                        collection(db, "billRequest"),
+                        where("restaurantId", "==", restaurantId),
+                        where("table", "==", tableNum),
+                        where("resolved", "==", false)
+                      );
+                      const querySnapshot = await getDocs(q);
+                      await Promise.all(
+                        querySnapshot.docs.map(doc => updateDoc(doc.ref, { resolved: true }))
+                      );
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Active Item Requests */}
+          {Object.entries(tableRequests).map(([tableNum, requests]) => {
+            const tableLabel = tables.find(t => String(t.tableNumber) === tableNum)?.label || tableNum;
+            return requests
+              .filter(req => !req.resolved)
+              .sort((a, b) => (a.timestamp?.toDate() || 0) - (b.timestamp?.toDate() || 0))
+              .map(request => (
+                <div 
+                  key={request.id} 
+                  className="p-3 rounded-lg bg-gray-800 border-l-4 border-yellow-400 cursor-pointer hover:bg-gray-700"
+                  onClick={() => openTablePopup(tableNum)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-yellow-400 font-medium">
+                        Table {tableLabel}
+                      </div>
+                      {request.items?.map((item, index) => (
+                        <div key={index} className="text-yellow-300">
+                          {item.quantity}x {item.item}
+                        </div>
+                      ))}
+                      <div className="text-xs text-yellow-200 mt-1">
+                        {request.timestamp?.toDate().toLocaleString() || 'No timestamp'}
+                      </div>
+                    </div>
+                    <button
+                      className="px-2 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkDone(tableNum, request.id);
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ));
+          })}
+
+          {/* Resolved Requests */}
+          {resolvedRequests.map(request => {
+            const tableLabel = tables.find(t => String(t.tableNumber) === request.table)?.label || request.table;
+            const timestamp = request.timestamp.getTime(); // Get timestamp in milliseconds
+            return (
+              <div 
+                key={`resolved-${request.type}-${request.id}-${timestamp}`}
+                className="p-3 rounded-lg bg-gray-800 border-l-4 border-gray-600"
+              >
+                <div className="text-gray-400 font-medium">
+                  Table {tableLabel}
+                </div>
+                {request.type === 'serverCall' ? (
+                  <div className="text-gray-500">
+                    🛎️ Server Call
+                  </div>
+                ) : request.type === 'bill' ? (
+                  <div className="text-gray-500">
+                    💳 Bill Request
+                  </div>
+                ) : request.items?.map((item, index) => (
+                  <div key={`resolved-${request.id}-item-${index}-${timestamp}`} className="text-gray-500">
+                    {item.quantity}x {item.item}
+                  </div>
+                ))}
+                <div className="text-xs text-gray-600 mt-1">
+                  {request.timestamp.toLocaleString()}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 flex flex-col">
       {/* Header */}
-      <div className="w-full flex items-center justify-between px-4 sm:px-6 py-4 relative">
-        <h1 className="absolute top-4 left-4 sm:left-1/2 sm:top-auto sm:transform sm:-translate-x-1/2 text-left sm:text-center text-xl sm:text-2xl md:text-3xl font-bold">
+        <div className="w-full flex items-center justify-between px-4 sm:px-6 py-4 mb-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center flex-1">
           Manager Dashboard
         </h1>
-        <div className="ml-auto flex space-x-2 sm:space-x-4">
+          <div className="flex space-x-2 sm:space-x-4">
           <button
             className="px-3 sm:px-4 md:px-6 py-2 text-sm sm:text-base md:text-lg bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
             onClick={() => router.push("/managerMain/settings")}
@@ -350,86 +623,23 @@ export default function ManagerMainPage() {
         </div>
       )}
 
-      {/* Tables */}
-      <div className="w-full flex flex-col items-center">
-        {/* Active Requests Section */}
-        <div className="w-full max-w-4xl px-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Active Requests</h2>
-            {(serverCallRequests.size > 0 || billRequests.size > 0 || Object.keys(tableRequests).length > 0) && (
-              <button
-                onClick={() => setShowConfirmPopup(true)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition"
-              >
-                Mark All Done
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-4 mb-8">
-            {Array.from(serverCallRequests.keys()).map((tableNum) => {
-              const table = tables.find(t => String(t.tableNumber) === tableNum);
-              const displayName = table?.label || `Table ${tableNum}`;
-              return (
-                <button
-                  key={`server-${tableNum}`}
-                  onClick={() => openTablePopup(tableNum)}
-                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
-                >
-                  {displayName}: 🛎️ Server Call
-                </button>
-              );
-            })}
-            {Array.from(billRequests).map((tableNum) => {
-              const table = tables.find(t => String(t.tableNumber) === tableNum);
-              const displayName = table?.label || `Table ${tableNum}`;
-              return (
-                <button
-                  key={`bill-${tableNum}`}
-                  onClick={() => openTablePopup(tableNum)}
-                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-medium hover:bg-yellow-400 transition"
-                >
-                  {displayName}: 💳 Bill
-                </button>
-              );
-            })}
-            {Object.entries(tableRequests).map(([tableNum, requests]) => {
-              const unresolvedCount = requests.filter(req => !req.resolved).length;
-              if (unresolvedCount === 0) return null;
-              const table = tables.find(t => String(t.tableNumber) === tableNum);
-              const displayName = table?.label || `Table ${tableNum}`;
-              return (
-                <button
-                  key={`request-${tableNum}`}
-                  onClick={() => openTablePopup(tableNum)}
-                  className="px-4 py-2 bg-yellow-400 text-black rounded-lg font-medium hover:bg-yellow-300 transition"
-                >
-                  {displayName}: {unresolvedCount} items
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Table Formation */}
-        <div className="w-full flex justify-center items-center" style={{ 
-          height: '65vh',
-          position: 'relative'
-        }}>
+        <div className="flex-1 flex justify-start items-center w-full max-w-[1200px] pl-[5%]">
           <div 
-            className="relative w-full h-full flex items-center justify-center"
+            className="relative w-full h-[75vh] flex items-center justify-center"
             style={{ 
-              padding: '1rem',
+              padding: '2rem',
               transform: 'scale(0.95)',
               transformOrigin: 'center center'
             }}
           >
             {(() => {
               const boundingBox = calculateBoundingBox(tables, screenWidth);
-              const containerWidth = screenWidth;
-              const containerHeight = window.innerHeight * 0.65; // 65vh
+              const containerWidth = screenWidth * 0.8; // Reduce the container width to move tables left
+              const containerHeight = window.innerHeight * 0.75;
               
-              // Calculate the offset to center the bounding box
-              const offsetX = (containerWidth - boundingBox.width) / 2 - boundingBox.minX;
+              // Adjust the offset calculation to move tables more to the left
+              const offsetX = (containerWidth - boundingBox.width) / 2 - boundingBox.minX - 100; // Subtract additional pixels to move left
               const offsetY = (containerHeight - boundingBox.height) / 2 - boundingBox.minY;
 
               return tables.map((table) => {
@@ -485,21 +695,24 @@ export default function ManagerMainPage() {
                       left: `${positionX}px`,
                       top: `${positionY}px`,
                       transform: 'translate(-50%, -50%)',
-                      fontSize: screenWidth < 600 ? '0.875rem' : screenWidth < 900 ? '1rem' : '1.25rem'
+                      fontSize: screenWidth < 600 ? '0.875rem' 
+                              : screenWidth < 900 ? '1rem' 
+                              : screenWidth > 1400 ? '1.5rem'
+                              : '1.25rem'
                     }}
                   >
                     <span className="absolute">{table.label || tableNumber}</span>
 
                     {isServerCallActive && (
-                      <span className="absolute -top-1 -left-1 text-base sm:text-lg">🛎️</span>
+                      <span className="absolute -top-1 -left-1 text-base sm:text-lg lg:text-xl xl:text-2xl">🛎️</span>
                     )}
 
                     {isBillRequestActive && (
-                      <span className="absolute -bottom-1 -right-1 text-base sm:text-lg">💳</span>
+                      <span className="absolute -bottom-1 -right-1 text-base sm:text-lg lg:text-xl xl:text-2xl">💳</span>
                     )}
 
                     {unresolvedRequests.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-1 py-0.5 rounded-full min-w-[1.2rem] text-center">
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs sm:text-sm lg:text-base xl:text-lg font-bold px-1 py-0.5 rounded-full min-w-[1.2rem] text-center">
                         {unresolvedRequests.length}
                       </span>
                     )}

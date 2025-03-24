@@ -888,13 +888,28 @@ export default function ManagerMainPage() {
                     const q = query(
                       collection(db, collectionName),
                       where("restaurantId", "==", restaurantId),
-                      where("table", "==", selectedTable)
+                      where("table", "==", selectedTable),
+                      where("resolved", "==", false)
                     );
 
                     const querySnapshot = await getDocs(q);
                     if (!querySnapshot.empty) {
-                      const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
-                      await Promise.all(deletePromises);
+                      // Instead of deleting, mark all as resolved
+                      const updatePromises = querySnapshot.docs.map((docRef) => {
+                        if (collectionName === "requests") {
+                          return updateDoc(docRef.ref, { 
+                            resolved: true,
+                            customerNotification: "Your request is on its way!",
+                            resolvedAt: new Date()
+                          });
+                        } else {
+                          return updateDoc(docRef.ref, { 
+                            resolved: true,
+                            resolvedAt: new Date()
+                          });
+                        }
+                      });
+                      await Promise.all(updatePromises);
                     }
                   }
 
